@@ -1,0 +1,29 @@
+{{define "header.html"}}
+<header class="Header">
+    <div class="Header-top">
+        <div class="Header-topLeft">
+            <a class="Header-homeLink" href="/">
+                <span class="Header-homeText">Jamsync</span>
+            </a>
+        </div>
+        {{if $.email}}
+        <a class="Header-login" href="/logout">Logout</a>
+        {{else}}
+        <a class="Header-login" href="/login">Login</a>
+        {{end}}
+    </div>
+    <div class="Header-bottom">
+        <div class="Header-bottomLeft">
+            <a class="Header-bottomLink" href="/">Home</a>
+            {{if $.email}}
+            <a class="Header-bottomLink" href="/download">Download</a>
+            {{end}}
+        </div>
+        {{if $.email}}
+        <div class="Header-bottomRight">
+            <a class="Header-bottomLink" href="/{{.email}}/projects">{{$.email}}</a>
+        </div>
+        {{end}}
+    </div>
+</header>
+{{end}}

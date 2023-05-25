@@ -1,0 +1,43 @@
+{{template "head.html" args 
+    "title" "Download" 
+    "canonical" "download" 
+    "description" "You can try a preview version Jamsync out for yourself using the client binaries on this page."
+}}
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <section class="Download">
+            <h1>Download</h1>
+            <p>You can try a preview version Jamsync out for yourself using the client binaries below.</p>
+            <p>Note that Jamsync is under development so make sure to back up your files.</p>
+            <ul>
+                <li><a class="Download-link" href="/public/jam_darwin_arm64.zip">darwin/arm64</a></li>
+                <li><a class="Download-link" href="/public/jam_darwin_amd64.zip">darwin/amd64</a></li>
+                <li><a class="Download-link" href="/public/jam_linux_arm64.zip">linux/arm64</a></li>
+                <li><a class="Download-link" href="/public/jam_linux_amd64.zip">linux/amd64</a></li>
+                <li><a class="Download-link" href="/public/jam_windows_arm64.zip">windows/arm64</a></li>
+                <li><a class="Download-link" href="/public/jam_windows_amd64.zip">windows/amd64</a></li>
+            </ul>
+            <h2>Installation and Usage</h2>
+            <p>
+                The Jamsync client is a single, small (~15MB) binary. To install, just download the client above and put it somewhere on your PATH.
+            </p>
+            <p>
+                See the help text for the `jam` binary for up-to-date descriptions of the commands.
+            </p>
+            <p>
+                For initial setup of a project, you'll need to run the following commands:
+                <ul>
+                    <li>`jam login` - opens a browser session that should authenticate with your jamsync account.</li>
+                    <li>`jam init` - prompts you to upload a new project or download an existing project.</li>
+                    <li>`jam sync` - watches for file changes and updates files to the most recent change.</li>
+                </ul>
+            </p>
+            <p>
+                Contact <a href="mailto:zach@jamsync.dev">zach@jamsync.dev</a> if you need any assistance!
+            </p>
+        </section>
+    </main>
+    {{template "footer.html"}}
+</body>
+{{template "foot.html"}}

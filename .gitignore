@@ -1,0 +1,29 @@
+# Golang
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+.DS_Store
+
+# Custom
+scripts/
+systemd/
+jb
+jamsync.db
+jamsync-build*
+.jamsync
+jamsync-build.zip
+.vscode
+gen/
+x509/
+
+**node_modules/
+//node_modules/
+*.bundle.js
+
+**opdata/
+**oplocs/

@@ -1,0 +1,15 @@
+<svg id="a" width="256px" height="256px" version="1.1" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+ <g stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="2.8">
+  <path d="m220.45 14.531c-23.261-1.2646-41.24 16.834-58.42 44.842-1.3476 2.1975-.64013 5.0602 1.58 6.3938 2.22 1.3339 10.692 8.9196 12.04 6.7219 8.1343-25.31 31.513-31.681 51.345-36.795 0 0-2.1438-20.924-6.5446-21.163z" color="#000000" fill="#007a0b" stroke-width="11.269"/>
+  <g fill="#ff007f" stroke-width="11.269">
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-189.16" cy="-105.54" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-152.84" cy="-68.797" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-212.42" cy="-62.836" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-116.73" cy="-6.1428" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-230.51" cy="9.1266" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-199.39" cy="58.236" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-139.22" cy="47.193" rx="36.007" ry="41.807"/>
+   <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-175.45" cy="-4.1575" rx="36.007" ry="41.807"/>
+  </g>
+ </g>
+</svg>

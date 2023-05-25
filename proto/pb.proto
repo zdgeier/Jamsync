@@ -1,0 +1,283 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/zdgeier/jamsync/proto/pb";
+import "google/protobuf/timestamp.proto";
+
+service JamsyncAPI {
+    // Project operations
+    rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
+    rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+    rpc ListUserProjects(ListUserProjectsRequest) returns (ListUserProjectsResponse);
+    rpc GetProjectConfig(GetProjectConfigRequest) returns (ProjectConfig);
+
+    // Change operations
+    rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse);
+    rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse);
+    rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
+    rpc GetBranch(GetBranchRequest) returns (GetBranchResponse);
+
+    // File operations
+    rpc ReadCommitChunkHashes(ReadCommitChunkHashesRequest) returns (ReadCommitChunkHashesResponse);
+    rpc ReadCommittedFile(ReadCommittedFileRequest) returns (stream ProjectOperation);
+    rpc ListCommitOperationLocations(ListCommitOperationLocationsRequest) returns (CommitOperationLocations);
+    rpc MergeBranch(MergeBranchRequest) returns (MergeBranchResponse);
+
+    rpc ReadBranchChunkHashes(ReadBranchChunkHashesRequest) returns (ReadBranchChunkHashesResponse);
+    rpc ReadBranchFile(ReadBranchFileRequest) returns (stream ProjectOperation);
+    rpc ListBranchOperationLocations(ListBranchOperationLocationsRequest) returns (BranchOperationLocations);
+    rpc WriteBranchOperationsStream(stream ProjectOperation) returns (WriteOperationStreamResponse);
+
+    // User operations
+    rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message EditorStreamMessage{
+    uint64 project_id = 1;
+    bytes update_data = 3;
+}
+
+message WriteOperationStreamResponse {}
+
+message FileMetadataDiff {
+    enum Type {
+        NoOp = 0;
+        Create = 1;
+        Update = 2;
+        Delete = 3; 
+    }
+    message FileDiff {
+        Type type = 1;
+        File file = 2;
+    }
+    map<string, FileDiff> diffs = 1;
+}
+
+message BranchOperationLocations {
+    uint64 project_id = 1;
+    string owner_id = 2;
+    bytes path_hash = 3;
+    uint64 branch_id = 4;
+    uint64 change_id = 5;
+    message OperationLocation {
+        uint64 offset = 1;
+        uint64 length = 2;
+        ChunkHash chunk_hash = 3;
+        uint64 data_location = 4;
+    }
+    repeated OperationLocation opLocs = 6;
+}
+
+message CommitOperationLocations {
+    uint64 project_id = 1;
+    string owner_id = 2;
+    bytes path_hash = 3;
+    uint64 commit_id = 4;
+    message OperationLocation {
+        uint64 offset = 1;
+        uint64 length = 2;
+        ChunkHash chunk_hash = 3;
+        uint64 data_location = 4;
+    }
+    repeated OperationLocation opLocs = 5;
+}
+
+message MergeBranchRequest {
+    uint64 project_id = 1;
+    uint64 branch_id = 2;
+}
+message MergeBranchResponse {
+    uint64 commit_id = 1;
+}
+
+message CreateBranchRequest {
+    uint64 project_id = 1;
+    string branchName = 2;
+}
+message CreateBranchResponse {
+    uint64 branch_id = 1;
+}
+
+message ListBranchesRequest {
+    uint64 project_id = 1;
+}
+message ListBranchesResponse {
+    map<string, uint64> branches = 1;
+}
+
+message ProjectOperation {
+    uint64 project_id = 1;
+    bytes path_hash = 3;
+    Operation op = 4;
+    uint64 branch_id = 5;
+}
+
+message Operation {
+    uint64 project_id = 1;
+    bytes path_hash = 3;
+    enum Type {
+        OpBlock = 0;
+        OpData = 1;
+    }
+    Type type = 4;
+    Chunk chunk = 5;
+    ChunkHash chunk_hash = 6;
+}
+
+message File {
+    google.protobuf.Timestamp mod_time = 1; 
+    bool dir = 2;
+    bytes hash = 3;
+}
+
+message FileMetadata {
+    map<string, File> files = 1;
+}
+
+message AddProjectRequest {
+    string project_name = 1;
+}
+message AddProjectResponse {
+    uint64 project_id = 1;
+}
+
+message DeleteBranchRequest {
+    uint64 project_id = 2;
+    uint64 branch_id = 3;
+}
+message DeleteBranchResponse {}
+
+message GetBranchRequest {
+    uint64 project_id = 1;
+    string branch_name = 2;
+}
+message GetBranchResponse {
+    uint64 branch_id = 1;
+    uint64 commit_id = 2;
+}
+
+message DeleteProjectRequest {
+    string project_name = 1;
+    uint64 project_id = 2;
+}
+message DeleteProjectResponse {
+    string project_name = 1;
+    uint64 project_id = 2;
+}
+
+message ListUserProjectsRequest {}
+message ListUserProjectsResponse {
+    message Project {
+        string name = 1;
+        uint64 id = 2;
+    }
+    repeated Project projects = 1;
+}
+
+message UserInfoRequest {
+    string username = 1;
+}
+
+message UserInfoResponse {
+    string username = 1;
+}
+
+message CreateUserRequest {
+    string username = 1;
+}
+message CreateUserResponse {}
+
+message BrowseProjectRequest {
+    string project_name = 1;
+    string path = 2;
+}
+
+message BrowseProjectResponse {
+    repeated string directories = 1;
+    repeated string files = 2;
+}
+
+message GetProjectConfigRequest {
+    string project_name = 1;
+    uint64 project_id = 2;
+    string branch_name = 3;
+}
+
+message ProjectConfig {
+    uint64 projectId = 1;
+    uint64 branchId = 2;
+    string project_name = 4;
+}
+
+message PingRequest {}
+message PingResponse {
+    string username = 1;
+}
+
+message ChunkHash {
+    uint64 offset = 1;
+    uint64 length = 2;
+    uint64 hash = 3;
+}
+
+message Chunk {
+    uint64 offset = 1;
+    uint64 length = 2;
+    bytes data = 3;
+    uint64 fingerprint = 4;
+    uint64 hash = 5;
+}
+
+message ReadCommittedFileRequest {
+    uint64 project_id = 1;
+    uint64 commit_id = 2;
+    bytes path_hash = 3;
+    google.protobuf.Timestamp mod_time = 4; 
+    repeated ChunkHash chunk_hashes = 5;
+}
+
+message ReadBranchFileRequest {
+    uint64 project_id = 1;
+    uint64 branch_id = 2;
+    uint64 change_id = 3;
+    bytes path_hash = 4;
+    google.protobuf.Timestamp mod_time = 5; 
+    repeated ChunkHash chunk_hashes = 6;
+}
+
+message ReadBranchChunkHashesRequest {
+    uint64 project_id = 1;
+    uint64 branch_id = 2;
+    uint64 change_id = 3;
+    bytes path_hash = 4;
+    google.protobuf.Timestamp mod_time = 5; 
+}
+
+message ReadBranchChunkHashesResponse {
+    repeated ChunkHash chunk_hashes = 1;
+}
+
+message ReadCommitChunkHashesRequest {
+    uint64 project_id = 1;
+    uint64 commit_id = 2;
+    bytes path_hash = 3;
+    google.protobuf.Timestamp mod_time = 4; 
+}
+
+message ReadCommitChunkHashesResponse {
+    repeated ChunkHash chunk_hashes = 1;
+}
+
+message ListBranchOperationLocationsRequest {
+    uint64 project_id = 1;
+    string path = 2;
+    uint64 branch_id = 3;
+}
+
+message ListCommitOperationLocationsRequest {
+    uint64 project_id = 1;
+    string path = 2;
+    uint64 commit_id = 3;
+}
