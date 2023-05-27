@@ -33,7 +33,7 @@ func Merge() {
 	defer closer()
 
 	fileMetadata := readLocalFileList()
-	remoteToLocalDiff, err := diffRemoteToLocal(apiClient, state.ProjectId, state.BranchId, state.ChangeId, fileMetadata)
+	remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchId, state.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}

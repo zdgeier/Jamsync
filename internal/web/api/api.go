@@ -2,16 +2,18 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/zdgeier/jamsync/gen/pb"
-	"github.com/zdgeier/jamsync/internal/server/client"
+	"github.com/zdgeier/jamsync/internal/server/file"
 	"github.com/zdgeier/jamsync/internal/server/server"
-	"go.starlark.net/lib/proto"
 	"golang.org/x/oauth2"
+	"google.golang.org/protobuf/proto"
 )
 
 func UserProjectsHandler() gin.HandlerFunc {
@@ -33,7 +35,36 @@ func UserProjectsHandler() gin.HandlerFunc {
 	}
 }
 
-func ProjectBrowseHandler() gin.HandlerFunc {
+func GetProjectCurrentCommitHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+		id, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		resp, err := tempClient.GetProjectCurrentCommit(ctx, &pb.GetProjectCurrentCommitRequest{ProjectId: id.GetProjectId()})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		fmt.Println("GOT", resp.CommitId)
+
+		ctx.JSON(200, resp)
+	}
+}
+
+func GetBranchInfoHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -51,23 +82,121 @@ func ProjectBrowseHandler() gin.HandlerFunc {
 			return
 		}
 
-		var branchId uint64
-		if ctx.Param("branchName") == "main" {
-			branchId = 0
-		} else {
-			branchResp, err := tempClient.GetBranch(ctx, &pb.GetBranchRequest{
-				ProjectId:  id.GetProjectId(),
-				BranchName: ctx.Param("branchName"),
-			})
-			if err != nil {
-				ctx.String(http.StatusInternalServerError, err.Error())
-				return
-			}
-			branchId = branchResp.GetBranchId()
+		branchId, err := strconv.Atoi(ctx.Param("branchName"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		resp, err := tempClient.GetBranchCurrentChange(ctx, &pb.GetBranchCurrentChangeRequest{ProjectId: id.GetProjectId(), BranchId: uint64(branchId)})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		type branchInfo struct {
+			BranchId uint64 `json:"branch_id"`
+			ChangeId uint64 `json:"change_id"`
+		}
+
+		ctx.JSON(200, &branchInfo{
+			BranchId: uint64(branchId),
+			ChangeId: resp.ChangeId,
+		})
+	}
+}
+
+func ProjectBrowseCommitHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+
+		id, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		commitId, err := strconv.Atoi(ctx.Param("commitId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
 		}
 
 		metadataResult := new(bytes.Buffer)
-		err = client.DownloadCommittedFile(ctx, tempClient, id.GetProjectId(), uint64(branchId), ".jamsyncfilelist", bytes.NewReader([]byte{}), metadataResult)
+		err = file.DownloadCommittedFile(tempClient, id.GetProjectId(), uint64(commitId), ".jamsyncfilelist", bytes.NewReader([]byte{}), metadataResult)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		fileMetadata := &pb.FileMetadata{}
+		err = proto.Unmarshal(metadataResult.Bytes(), fileMetadata)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		directoryNames := make([]string, 0, len(fileMetadata.GetFiles()))
+		fileNames := make([]string, 0, len(fileMetadata.GetFiles()))
+		requestPath := filepath.Clean(ctx.Param("path")[1:])
+		for path, file := range fileMetadata.GetFiles() {
+			pathDir := filepath.Dir(path)
+			if (path == "" && pathDir == ".") || pathDir == requestPath {
+				if file.GetDir() {
+					directoryNames = append(directoryNames, filepath.Base(path))
+				} else {
+					fileNames = append(fileNames, filepath.Base(path))
+				}
+			}
+		}
+
+		ctx.JSON(200, &pb.BrowseProjectResponse{
+			Directories: directoryNames,
+			Files:       fileNames,
+		})
+	}
+}
+
+func ProjectBrowseBranchHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+
+		id, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		branchId, err := strconv.Atoi(ctx.Param("branchId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		changeId, err := strconv.Atoi(ctx.Param("changeId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		metadataResult := new(bytes.Buffer)
+		err = file.DownloadBranchFile(tempClient, id.GetProjectId(), uint64(branchId), uint64(changeId), ".jamsyncfilelist", bytes.NewReader([]byte{}), metadataResult)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -100,7 +229,7 @@ func ProjectBrowseHandler() gin.HandlerFunc {
 	}
 }
 
-func GetFileHandler() gin.HandlerFunc {
+func GetFileBranchHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -118,24 +247,55 @@ func GetFileHandler() gin.HandlerFunc {
 			return
 		}
 
-		var branchId uint64
-		if ctx.Param("branchName") == "main" {
-			branchId = 0
-		} else {
-			branchResp, err := tempClient.GetBranch(ctx, &pb.GetBranchRequest{
-				ProjectId:  config.ProjectId,
-				BranchName: ctx.Param("branchName"),
-			})
-			if err != nil {
-				ctx.String(http.StatusInternalServerError, err.Error())
-				return
-			}
-			branchId = branchResp.GetBranchId()
+		branchId, err := strconv.Atoi(ctx.Param("branchId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
 		}
 
-		client := client.NewClient(tempClient, config.GetProjectId(), uint64(branchId))
+		changeId, err := strconv.Atoi(ctx.Param("changeId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 
-		client.DownloadFile(ctx, ctx.Param("path")[1:], bytes.NewReader([]byte{}), ctx.Writer)
+		err = file.DownloadBranchFile(tempClient, config.ProjectId, uint64(branchId), uint64(changeId), ctx.Param("path")[1:], bytes.NewReader([]byte{}), ctx.Writer)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+	}
+}
+
+func GetFileCommitHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := server.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+
+		config, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		commitId, err := strconv.Atoi(ctx.Param("commitId"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		err = file.DownloadCommittedFile(tempClient, config.ProjectId, uint64(commitId), ctx.Param("path")[1:], bytes.NewReader([]byte{}), ctx.Writer)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
 	}
 }
 

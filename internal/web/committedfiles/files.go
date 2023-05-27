@@ -1,4 +1,4 @@
-package files
+package committedfiles
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ func Handler(ctx *gin.Context) {
 	type templateParams struct {
 		Email interface{}
 	}
-	ctx.HTML(http.StatusOK, "files.html", templateParams{
+	ctx.HTML(http.StatusOK, "committedfiles.html", templateParams{
 		Email: session.Get("email"),
 	})
 }

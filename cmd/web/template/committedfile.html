@@ -1,0 +1,14 @@
+{{template "head.html" args
+    "title" "File" 
+    "customScript" "/public/editor.bundle.js"
+}}
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <section class="File">
+            <div id="js-file-location"></div>
+        </section>
+    </main>
+    {{template "footer.html"}}
+</body>
+{{template "foot.html"}}

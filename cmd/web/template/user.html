@@ -31,7 +31,7 @@
             for (let project of projectsJson.projects) {
                 let temp = document.createElement("li");
                 let projectLink = document.createElement("a");
-                projectLink.href = projectUrl + `/${project.name}/files/main`;
+                projectLink.href = projectUrl + `/${project.name}/committedfiles/`;
                 projectLink.innerHTML = project.name;
                 temp.appendChild(projectLink);
                 frag.appendChild(temp);

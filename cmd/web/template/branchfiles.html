@@ -22,11 +22,10 @@
     </main>
     {{template "footer.html"}}
     <script type="module">
-
         let splitPath = window.location.pathname.split("/");
         let projectUrl =  splitPath.slice(0, 5).join('/');
         let projectName = splitPath[2];
-        let currBranchId = splitPath[4];
+        let currBranchName = splitPath[4];
 
         async function updateFilesTable() {
             const queryParams = new URLSearchParams(window.location.search);
@@ -34,16 +33,15 @@
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
-            let currBranchId = splitPath[4];
+
+            const branchInfoResp = await fetch(`/api/projects/${projectName}`);
+            const branchInfoJson = await branchInfoResp.json();
+            const currentChangeId = branchInfoJson.change_id ?? 0;
+            const branchId = branchInfoJson.branch_id ?? 0;
 
             let filesJson;
-            if (currBranchId === null) {
-                const filesResp = await fetch(`/api/projects/${projectName}/files/main/${currentPath}`);
-                filesJson = await filesResp.json();
-            } else {
-                const filesResp = await fetch(`/api/projects/${projectName}/files/${currBranchId}/${currentPath}`);
-                filesJson = await filesResp.json();
-            }
+            const filesResp = await fetch(`/api/projects/${projectName}/branchfiles/${branchId}/${currentChangeId}/${currentPath}`);
+            filesJson = await filesResp.json();
 
             let allFilesTempEl = document.createElement("ol");
             allFilesTempEl.id = "files";
@@ -59,13 +57,13 @@
                     let listItemEl = document.createElement("li");
                     let directoryLink = document.createElement("a");
                     if (currentPath == "") {
-                        directoryLink.href = `${projectUrl}/files/${currBranchId}/${directory}`;
+                        directoryLink.href = `${projectUrl}/branchfiles/${currBranchName}/${directory}`;
                     } else if (directory == "..") {
                         let currPaths = currentPath.split('/');
                         currPaths.pop();
-                        directoryLink.href = `${projectUrl}/files/${currBranchId}/${currPaths.join('/')}`;
+                        directoryLink.href = `${projectUrl}/branchfiles/${currBranchName}/${currPaths.join('/')}`;
                     } else {
-                        directoryLink.href = `${projectUrl}/files/${currBranchId}/${currentPath}/${directory}`;
+                        directoryLink.href = `${projectUrl}/branchfiles/${currBranchName}/${currentPath}/${directory}`;
                     }
                     directoryLink.innerHTML = directory + "/"
                     listItemEl.classList.add("Files-directory")
@@ -79,9 +77,9 @@
                     let listItemEl = document.createElement("li");
                     let fileLink = document.createElement("a");
                     if (currentPath == "") {
-                        fileLink.href = `${projectUrl}/file/${currBranchId}/${file}`;
+                        fileLink.href = `${projectUrl}/branchfiles/${currBranchName}/${file}`;
                     } else {
-                        fileLink.href = `${projectUrl}/file/${currBranchId}/${currentPath}/${file}`;
+                        fileLink.href = `${projectUrl}/branchfiles/${currBranchName}/${currentPath}/${file}`;
                     }
                     fileLink.innerHTML = file; 
                     listItemEl.appendChild(fileLink);
@@ -99,7 +97,7 @@
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
-            let currBranchId = splitPath[4];
+            let currBranchName = splitPath[4];
             let branchesResp = await fetch(`/api/projects/${projectName}/branches`);
             let branchesJson = await branchesResp.json();
 
@@ -121,11 +119,11 @@
             optionEl.innerHTML = "main";
             optionEl.setAttribute("value", "main");
             selectEl.appendChild(optionEl);
-            selectEl.value = currBranchId;
+            selectEl.value = currBranchName;
 
             selectEl.addEventListener("change", () => {
                 let projectName = splitPath[2];
-                let currBranchId = splitPath[4];
+                let currBranchName = splitPath[4];
                 window.location.href = `${projectUrl}/files/${selectEl.value}/${currentPath}`;
             });
         }

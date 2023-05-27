@@ -13,6 +13,24 @@ import (
 	"github.com/zdgeier/jamsync/internal/server/serverauth"
 )
 
+func (s JamsyncServer) GetProjectCurrentCommit(ctx context.Context, in *pb.GetProjectCurrentCommitRequest) (*pb.GetProjectCurrentCommitResponse, error) {
+	userId, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("ID", in.ProjectId)
+	commitId, err := s.oplocstorecommit.MaxCommitId(userId, in.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(commitId)
+
+	return &pb.GetProjectCurrentCommitResponse{
+		CommitId: commitId,
+	}, err
+}
+
 func (s JamsyncServer) ReadCommitChunkHashes(ctx context.Context, in *pb.ReadCommitChunkHashesRequest) (*pb.ReadCommitChunkHashesResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
@@ -160,7 +178,11 @@ func (s JamsyncServer) MergeBranch(ctx context.Context, in *pb.MergeBranchReques
 		}
 	}
 	// Regen every file that has been changed in branch
-	changedPathHashes := s.opdatastorebranch.GetChangedPathHashes(userId, in.GetProjectId(), in.GetBranchId())
+	changedPathHashes, err := s.opdatastorebranch.GetChangedPathHashes(userId, in.GetProjectId(), in.GetBranchId())
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	maxChangeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
 	if err != nil {
 		return nil, err

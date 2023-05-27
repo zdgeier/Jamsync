@@ -7,7 +7,6 @@ import (
 
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/authfile"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
 	"github.com/zdgeier/jamsync/internal/server/server"
 	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
@@ -33,25 +32,71 @@ func Pull() {
 	}
 	defer closer()
 
-	client := serverclient.NewClient(apiClient, state.ProjectId, state.BranchId)
+	if state.CommitId == 0 {
+		changeResp, err := apiClient.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchId})
+		if err != nil {
+			panic(err)
+		}
 
-	fileMetadata := readLocalFileList()
-	remoteToLocalDiff, err := client.DiffRemoteToLocal(context.Background(), fileMetadata)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	if diffHasChanges(remoteToLocalDiff) {
-		err = applyFileListDiff(remoteToLocalDiff, client)
+		fileMetadata := readLocalFileList()
+		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchId, changeResp.GetChangeId(), fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
-		for key, val := range remoteToLocalDiff.GetDiffs() {
-			if val.Type != pb.FileMetadataDiff_NoOp {
-				fmt.Println("Pulled", key)
+
+		if diffHasChanges(remoteToLocalDiff) {
+			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
+			if err != nil {
+				log.Panic(err)
 			}
+			for key, val := range remoteToLocalDiff.GetDiffs() {
+				if val.Type != pb.FileMetadataDiff_NoOp {
+					fmt.Println("Pulled", key)
+				}
+			}
+		} else {
+			fmt.Println("No changes to pull")
+		}
+		err = statefile.StateFile{
+			ProjectId: state.ProjectId,
+			BranchId:  state.BranchId,
+			ChangeId:  changeResp.ChangeId,
+		}.Save()
+		if err != nil {
+			panic(err)
 		}
 	} else {
-		fmt.Println("No changes to pull")
+		commitResp, err := apiClient.GetProjectCurrentCommit(context.Background(), &pb.GetProjectCurrentCommitRequest{ProjectId: state.ProjectId})
+		if err != nil {
+			panic(err)
+		}
+
+		fileMetadata := readLocalFileList()
+		remoteToLocalDiff, err := diffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, fileMetadata)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if diffHasChanges(remoteToLocalDiff) {
+			err = applyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, remoteToLocalDiff)
+			if err != nil {
+				log.Panic(err)
+			}
+			for key, val := range remoteToLocalDiff.GetDiffs() {
+				if val.Type != pb.FileMetadataDiff_NoOp {
+					fmt.Println("Pulled", key)
+				}
+			}
+		} else {
+			fmt.Println("No changes to pull")
+		}
+
+		err = statefile.StateFile{
+			ProjectId: state.ProjectId,
+			CommitId:  commitResp.CommitId,
+		}.Save()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

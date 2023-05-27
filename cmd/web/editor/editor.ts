@@ -12,8 +12,6 @@ import { EditorView } from "@codemirror/view"
 
 let splitPath = window.location.pathname.split("/");
 let projectName = splitPath[2];
-let currBranchId = splitPath[4];
-const currentPath = splitPath.slice(5).join("/");
 
 const myHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: "var(--tan)" },
@@ -56,10 +54,23 @@ let myTheme = EditorView.theme({
 }, { dark: true });
 
 async function setup() {
-  const resp = await fetch(
-    `/api/projects/${projectName}/file/${currBranchId}/${currentPath}`,
-  );
-  const doc = await resp.text();
+  let fileResp;
+  if (window.location.pathname.includes("committedfile")) {
+    const currentPath = splitPath.slice(4).join("/");
+    const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+    const currentCommitJson = await currentCommitResp.json();
+    const currentCommitId = currentCommitJson.commit_id ?? 0;
+    fileResp = await fetch(
+      `/api/projects/${projectName}/committedfile/${currentCommitId}/${currentPath}`,
+    );
+  } else {
+    const currBranchId = splitPath[4];
+    const currentPath = splitPath.slice(5).join("/");
+    fileResp = await fetch(
+      `/api/projects/${projectName}/branchfile/${currBranchId}/${currentPath}`,
+    );
+  }
+  const doc = await fileResp.text();
   const extensions = [
     vim(),
     myTheme,
@@ -67,10 +78,10 @@ async function setup() {
     keymap.of([indentWithTab]),
     EditorState.readOnly.of(true),
   ]
-  if (currentPath.endsWith('.go')) {
-    extensions.push(StreamLanguage.define(go))
-    extensions.push(syntaxHighlighting(myHighlightStyle))
-  }
+  // if (currentPath.endsWith('.go')) {
+  //   extensions.push(StreamLanguage.define(go))
+  //   extensions.push(syntaxHighlighting(myHighlightStyle))
+  // }
   let state = EditorState.create({
     doc,
     extensions: extensions,

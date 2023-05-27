@@ -77,9 +77,8 @@ func (s *LocalOpLocStore) InsertOperationLocations(opLocs *pb.CommitOperationLoc
 func (s *LocalOpLocStore) MaxCommitId(ownerId string, projectId uint64) (uint64, error) {
 	commitDir := fmt.Sprintf("jb/%s/%d/oplocstorecommit/", ownerId, projectId)
 	_, err := os.Stat(commitDir)
-	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return 0, os.ErrNotExist
-	} else if err != nil {
+	if err != nil {
+		// ErrNotExists returned when no commit directory has been created yet (probably a new project)
 		return 0, err
 	}
 

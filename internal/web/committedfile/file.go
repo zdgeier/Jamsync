@@ -1,4 +1,4 @@
-package file
+package committedfile
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ func Handler(ctx *gin.Context) {
 		Email  interface{}
 		IsProd bool
 	}
-	ctx.HTML(http.StatusOK, "file.html", templateParams{
+	ctx.HTML(http.StatusOK, "committedfile.html", templateParams{
 		Email:  session.Get("email"),
 		IsProd: jamenv.Env() == jamenv.Prod,
 	})

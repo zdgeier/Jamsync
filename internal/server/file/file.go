@@ -1,16 +1,13 @@
 package file
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"log"
-	"path/filepath"
 
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/fastcdc"
 	"github.com/zeebo/xxh3"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -58,15 +55,15 @@ func UploadBranchFile(ctx context.Context, apiClient pb.JamsyncAPIClient, projec
 		}
 	}()
 
-	writeStream, err := c.api.WriteBranchOperationsStream(ctx)
+	writeStream, err := apiClient.WriteBranchOperationsStream(ctx)
 	if err != nil {
 		return err
 	}
 	sent := 0
 	for op := range opsOut {
 		err = writeStream.Send(&pb.ProjectOperation{
-			ProjectId: client.ProjectId,
-			BranchId:  client.BranchId,
+			ProjectId: projectId,
+			BranchId:  branchId,
 			PathHash:  pathToHash(filePath),
 			Op:        op,
 		})
@@ -78,8 +75,8 @@ func UploadBranchFile(ctx context.Context, apiClient pb.JamsyncAPIClient, projec
 	// We have to send a tombstone if we have not generated any ops (empty file)
 	if sent == 0 {
 		err = writeStream.Send(&pb.ProjectOperation{
-			ProjectId: client.ProjectId,
-			BranchId:  client.BranchId,
+			ProjectId: projectId,
+			BranchId:  branchId,
 			PathHash:  pathToHash(filePath),
 			Op: &pb.Operation{
 				Type:  pb.Operation_OpData,
@@ -94,7 +91,7 @@ func UploadBranchFile(ctx context.Context, apiClient pb.JamsyncAPIClient, projec
 	return err
 }
 
-func DownloadCommittedFile(ctx context.Context, client pb.JamsyncAPIClient, projectId uint64, commitId uint64, filePath string, localReader io.ReadSeeker, localWriter io.Writer) error {
+func DownloadCommittedFile(client pb.JamsyncAPIClient, projectId uint64, commitId uint64, filePath string, localReader io.ReadSeeker, localWriter io.Writer) error {
 	sig := make([]*pb.ChunkHash, 0)
 	localChunker, err := fastcdc.NewChunker(localReader, fastcdc.Options{
 		AverageSize: 1024 * 64,
@@ -112,7 +109,7 @@ func DownloadCommittedFile(ctx context.Context, client pb.JamsyncAPIClient, proj
 		return err
 	}
 
-	stream, err := client.ReadCommittedFile(ctx, &pb.ReadCommittedFileRequest{
+	stream, err := client.ReadCommittedFile(context.TODO(), &pb.ReadCommittedFileRequest{
 		ProjectId:   projectId,
 		CommitId:    commitId,
 		PathHash:    pathToHash(filePath),
@@ -203,39 +200,6 @@ func DownloadBranchFile(client pb.JamsyncAPIClient, projectId uint64, branchId u
 	}
 
 	return err
-}
-
-func BrowseProject(path string) (*pb.BrowseProjectResponse, error) {
-	ctx := context.Background()
-	metadataResult := new(bytes.Buffer)
-	err := c.DownloadFile(ctx, ".jamsyncfilelist", bytes.NewReader([]byte{}), metadataResult)
-	if err != nil {
-		return nil, err
-	}
-	fileMetadata := &pb.FileMetadata{}
-	err = proto.Unmarshal(metadataResult.Bytes(), fileMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	directoryNames := make([]string, 0, len(fileMetadata.GetFiles()))
-	fileNames := make([]string, 0, len(fileMetadata.GetFiles()))
-	requestPath := filepath.Clean(path)
-	for path, file := range fileMetadata.GetFiles() {
-		pathDir := filepath.Dir(path)
-		if (path == "" && pathDir == ".") || pathDir == requestPath {
-			if file.GetDir() {
-				directoryNames = append(directoryNames, filepath.Base(path))
-			} else {
-				fileNames = append(fileNames, filepath.Base(path))
-			}
-		}
-	}
-
-	return &pb.BrowseProjectResponse{
-		Directories: directoryNames,
-		Files:       fileNames,
-	}, err
 }
 
 func pathToHash(path string) []byte {

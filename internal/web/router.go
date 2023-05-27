@@ -17,10 +17,12 @@ import (
 	"github.com/zdgeier/jamsync/internal/jamenv"
 	"github.com/zdgeier/jamsync/internal/web/api"
 	"github.com/zdgeier/jamsync/internal/web/authenticator"
+	"github.com/zdgeier/jamsync/internal/web/branchfile"
+	"github.com/zdgeier/jamsync/internal/web/branchfiles"
 	"github.com/zdgeier/jamsync/internal/web/callback"
+	"github.com/zdgeier/jamsync/internal/web/committedfile"
+	"github.com/zdgeier/jamsync/internal/web/committedfiles"
 	"github.com/zdgeier/jamsync/internal/web/download"
-	"github.com/zdgeier/jamsync/internal/web/file"
-	"github.com/zdgeier/jamsync/internal/web/files"
 	"github.com/zdgeier/jamsync/internal/web/login"
 	"github.com/zdgeier/jamsync/internal/web/logout"
 	"github.com/zdgeier/jamsync/internal/web/middleware"
@@ -126,18 +128,20 @@ func New(auth *authenticator.Authenticator) http.Handler {
 	router.GET("/logout", logout.Handler)
 
 	router.GET("/api/userprojects", api.UserProjectsHandler())
-	// router.GET("/api/projects/:projectName/:branchName/*path", api.GetCurrentChangeHandler())
+	router.GET("/api/projects/:projectName", api.GetProjectCurrentCommitHandler())
 	router.GET("/api/projects/:projectName/branches", api.GetBranchesHandler())
-	router.GET("/api/projects/:projectName", api.ProjectBrowseHandler())
-	router.GET("/api/projects/:projectName/files/:branchName/*path", api.ProjectBrowseHandler())
-	router.GET("/api/projects/:projectName/file/:branchName/*path", api.GetFileHandler())
+	router.GET("/api/projects/:projectName/branches/:branchName", api.GetBranchInfoHandler())
+	router.GET("/api/projects/:projectName/committedfiles/:commitId/*path", api.ProjectBrowseCommitHandler())
+	router.GET("/api/projects/:projectName/committedfile/:commitId/*path", api.GetFileCommitHandler())
+	router.GET("/api/projects/:projectName/branchfiles/:branchId/:changeId/*path", api.ProjectBrowseBranchHandler())
+	router.GET("/api/projects/:projectName/branchfile/:branchId/:changeId/*path", api.GetFileBranchHandler())
 
 	router.POST("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.CreateHandler)
 	router.GET("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.Handler)
-	router.GET("/:username/:project/file/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, file.Handler)
-	router.GET("/:username/:project/files/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, files.Handler)
-	router.GET("/:username/:project/files/:branchName", middleware.IsAuthenticated, middleware.Reauthenticate, files.Handler)
-	router.GET("/:username/:project", middleware.IsAuthenticated, middleware.Reauthenticate, files.Handler)
+	router.GET("/:username/:project/branchfile/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, branchfile.Handler)
+	router.GET("/:username/:project/committedfile/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfile.Handler)
+	router.GET("/:username/:project/committedfiles/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfiles.Handler)
+	router.GET("/:username/:project/branchfiles/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, branchfiles.Handler)
 	router.GET("/download", middleware.IsAuthenticated, middleware.Reauthenticate, download.Handler)
 	return MaxAge(handlers.CompressHandler(router))
 }

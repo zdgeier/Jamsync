@@ -31,21 +31,26 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 	}
 	fmt.Println("Initializing a project at " + currentPath)
 
+	branchResp, err := apiClient.CreateBranch(context.TODO(), &pb.CreateBranchRequest{ProjectId: resp.ProjectId, BranchName: "init"})
+	if err != nil {
+		log.Panic(err)
+	}
+
 	fileMetadata := readLocalFileList()
-	fileMetadataDiff, err := diffLocalToRemote(apiClient, fileMetadata, resp.ProjectId, 0, 0)
+	fileMetadataDiff, err := diffLocalToRemoteCommit(apiClient, resp.GetProjectId(), branchResp.GetBranchId(), fileMetadata)
 	if err != nil {
 		panic(err)
 	}
 
-	err = pushFileListDiff(apiClient, resp.ProjectId, 0, 0, fileMetadata, fileMetadataDiff)
+	err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Merging...")
-	_, err = apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
+	mergeResp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
 		ProjectId: resp.ProjectId,
-		BranchId:  0,
+		BranchId:  branchResp.BranchId,
 	})
 	if err != nil {
 		panic(err)
@@ -53,7 +58,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 
 	_, err = apiClient.DeleteBranch(context.Background(), &pb.DeleteBranchRequest{
 		ProjectId: resp.ProjectId,
-		BranchId:  0,
+		BranchId:  branchResp.BranchId,
 	})
 	if err != nil {
 		log.Panic(err)
@@ -61,9 +66,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 
 	err = statefile.StateFile{
 		ProjectId: resp.ProjectId,
-		BranchId:  0,
-		ChangeId:  0,
-		CommitId:  0,
+		CommitId:  mergeResp.CommitId,
 	}.Save()
 	if err != nil {
 		panic(err)
@@ -82,30 +85,23 @@ func initExistingProject(apiClient pb.JamsyncAPIClient) {
 		log.Panic(err)
 	}
 
-	getBranchResp, err := apiClient.GetBranch(context.Background(), &pb.GetBranchRequest{
-		ProjectId:  resp.ProjectId,
-		BranchName: "main",
+	commitResp, err := apiClient.GetProjectCurrentCommit(context.Background(), &pb.GetProjectCurrentCommitRequest{
+		ProjectId: resp.GetProjectId(),
 	})
+
+	diffRemoteToLocalResp, err := diffRemoteToLocalCommit(apiClient, resp.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	diffRemoteToLocalResp, err := diffRemoteToLocal(apiClient, resp.ProjectId, getBranchResp.BranchId, getBranchResp.ChangeId, &pb.FileMetadata{})
+	err = applyFileListDiffCommit(apiClient, resp.GetProjectId(), commitResp.CommitId, diffRemoteToLocalResp)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = applyFileListDiff(diffRemoteToLocalResp, apiClient, resp.GetProjectId(), getBranchResp.GetBranchId())
-	if err != nil {
-		log.Panic(err)
-	}
-
-	//TODO
 	err = statefile.StateFile{
 		ProjectId: resp.ProjectId,
-		BranchId:  getBranchResp.GetBranchId(),
-		ChangeId:  getBranchResp.GetChangeId(),
-		CommitId:  0,
+		CommitId:  commitResp.CommitId,
 	}.Save()
 	if err != nil {
 		panic(err)
@@ -121,7 +117,7 @@ func InitConfig() {
 
 	authFile, err := authfile.Authorize()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("`~/.jamsyncauth` file could not be found. Run `jam login` to create this file.")
 		os.Exit(1)
 	}
 

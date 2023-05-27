@@ -3,9 +3,11 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"os"
 
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/fastcdc"
@@ -21,7 +23,7 @@ func (s JamsyncServer) CreateBranch(ctx context.Context, in *pb.CreateBranchRequ
 	}
 
 	maxCommitId, err := s.oplocstorecommit.MaxCommitId(userId, in.GetProjectId())
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
@@ -57,14 +59,14 @@ func (s JamsyncServer) GetBranch(ctx context.Context, in *pb.GetBranchRequest) (
 		return nil, err
 	}
 
-	branchId, commitId, err := s.changestore.GetBranchByName(userId, in.GetProjectId(), in.GetBranchName())
+	branchId, changeId, err := s.changestore.GetBranchByName(userId, in.GetProjectId(), in.GetBranchName())
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetBranchResponse{
 		BranchId: branchId,
-		CommitId: commitId,
+		ChangeId: changeId,
 	}, nil
 }
 

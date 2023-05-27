@@ -1,0 +1,152 @@
+{{template "head.html" args
+    "title" "Files" 
+}}
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <div class="FilesHeader">
+            <h1 id="projectname"></h1>
+            <span>
+                <select id="branches" class="FilesHeader-branchSelect is-hidden">
+                </select>
+                <p id="no-branches" class="is-hidden">
+                    No branches
+                </p>
+            </span>
+        </div>
+        <div class="is-hidden" id="js-no-files">No files here, <a href="/download">download the CLI</a> to get started!</div>
+        <section class="Files" id="filescontainer">
+            <ol class="Files-table is-hidden" id="files">
+            </ol>
+        </section>
+    </main>
+    {{template "footer.html"}}
+    <script type="module">
+
+        let splitPath = window.location.pathname.split("/");
+        let projectUrl =  splitPath.slice(0, 5).join('/');
+        let projectName = splitPath[2];
+        let currBranchId = splitPath[4];
+
+        async function updateFilesTable() {
+            const queryParams = new URLSearchParams(window.location.search);
+            const selectEl = document.getElementById("branches");
+            let splitPath = window.location.pathname.split("/");
+            let projectUrl =  splitPath.slice(0, 3).join('/');
+            let projectName = splitPath[2];
+
+            const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+            const currentCommitJson = await currentCommitResp.json();
+            const currentCommitId = currentCommitJson.commit_id ?? 0;
+            const currentPath = splitPath.slice(4).join('/');
+
+            const filesResp = await fetch(`/api/projects/${projectName}/committedfiles/${currentCommitId}/${currentPath}`);
+            const filesJson = await filesResp.json();
+
+            let allFilesTempEl = document.createElement("ol");
+            allFilesTempEl.id = "files";
+            allFilesTempEl.classList.add("Files-table");
+            if (!filesJson.directories) {
+                filesJson.directories = []
+            }
+            if (currentPath != "" && filesJson.directories) {
+                filesJson.directories.unshift("..")
+            }
+            if (filesJson.directories) {
+                for (let directory of filesJson.directories.sort()) {
+                    let listItemEl = document.createElement("li");
+                    let directoryLink = document.createElement("a");
+                    if (currentPath == "") {
+                        directoryLink.href = `${projectUrl}/committedfiles/${directory}`;
+                    } else if (directory == "..") {
+                        let currPaths = currentPath.split('/');
+                        currPaths.pop();
+                        directoryLink.href = `${projectUrl}/committedfiles/${currPaths.join('/')}`;
+                    } else {
+                        directoryLink.href = `${projectUrl}/committedfiles/${currentPath}/${directory}`;
+                    }
+                    directoryLink.innerHTML = directory + "/"
+                    listItemEl.classList.add("Files-directory")
+                    listItemEl.appendChild(directoryLink);
+                    allFilesTempEl.appendChild(listItemEl);
+                }
+            }
+
+            if (filesJson.files) {
+                for (let file of filesJson.files.sort()) {
+                    let listItemEl = document.createElement("li");
+                    let fileLink = document.createElement("a");
+                    if (currentPath == "") {
+                        fileLink.href = `${projectUrl}/committedfile/${file}`;
+                    } else {
+                        fileLink.href = `${projectUrl}/committedfile/${currentPath}/${file}`;
+                    }
+                    fileLink.innerHTML = file; 
+                    listItemEl.appendChild(fileLink);
+                    allFilesTempEl.appendChild(listItemEl);
+                }
+            }
+
+            let allFilesEl = document.getElementById("files");
+            allFilesEl.remove();
+            document.getElementById('filescontainer').appendChild(allFilesTempEl);
+            allFilesTempEl.classList.remove("is-hidden");
+        }
+
+        async function branches() {
+            let splitPath = window.location.pathname.split("/");
+            let projectUrl =  splitPath.slice(0, 3).join('/');
+            let projectName = splitPath[2];
+            let branchesResp = await fetch(`/api/projects/${projectName}/branches`);
+            let branchesJson = await branchesResp.json();
+
+            let selectEl = document.getElementById("branches");
+            selectEl.innerHTML = "";
+            let noBranches = document.getElementById("no-branches");
+            for (const branchName in branchesJson.branches) {
+                let optionEl = document.createElement("option");
+                optionEl.innerHTML = branchName;
+                optionEl.setAttribute("value", branchName);
+                selectEl.appendChild(optionEl);
+                selectEl.classList.remove("is-hidden");
+            }
+            if (selectEl.classList.contains("is-hidden")) {
+                noBranches.classList.remove("is-hidden");
+                return
+            }
+            let optionEl = document.createElement("option");
+            optionEl.innerHTML = "main";
+            optionEl.setAttribute("value", "main");
+            selectEl.appendChild(optionEl);
+            selectEl.value = "main";
+
+            selectEl.addEventListener("change", () => {
+                if (selectEl.value === "main") {
+                    let projectName = splitPath[2];
+                    window.location.href = `${projectUrl}/committedfiles/${currentPath}`;
+                } else {
+                    let projectName = splitPath[2];
+                    let currBranchId = splitPath[4];
+                    window.location.href = `${projectUrl}/branchfiles/${selectEl.value}/${currentPath}`;
+                }
+            });
+        }
+        branches()
+
+        let currentPath = splitPath.slice(5).join('/');
+        let projectNameEl = document.getElementById("projectname");
+        projectNameEl.innerHTML = "$ " + projectName + "/" + currentPath;
+
+        const queryParams = new URLSearchParams(window.location.search);
+        let branchName = queryParams.get("branchName") ?? "";
+
+
+        window.addEventListener('pageshow', (event) => {
+            branches()
+            updateFilesTable()
+        });
+        updateFilesTable()
+    </script>
+</body>
+
+</html>

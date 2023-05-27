@@ -7,7 +7,7 @@ import (
 
 func setup(db *sql.DB) error {
 	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS branches (name TEXT, commitId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+	CREATE TABLE IF NOT EXISTS branches (name TEXT, changeId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
 	`
 	_, err := db.Exec(sqlStmt)
 	return err
@@ -23,37 +23,37 @@ func deleteBranch(db *sql.DB, branchId uint64) error {
 }
 
 func getBranchByName(db *sql.DB, branchName string) (uint64, uint64, error) {
-	row := db.QueryRow("SELECT rowid, commitId FROM branches WHERE name = ?", branchName)
+	row := db.QueryRow("SELECT rowid, changeId FROM branches WHERE name = ?", branchName)
 	if row.Err() != nil {
 		return 0, 0, row.Err()
 	}
 
-	var commitId uint64
+	var changeId uint64
 	var branchId uint64
-	err := row.Scan(&branchId, &commitId)
+	err := row.Scan(&branchId, &changeId)
 	if errors.Is(sql.ErrNoRows, err) {
 		return 0, 0, nil
 	}
-	return branchId, commitId, err
+	return branchId, changeId, err
 }
 
 func getBranch(db *sql.DB, branchId uint64) (string, uint64, error) {
-	row := db.QueryRow("SELECT name, commitId FROM branches WHERE rowid = ?", branchId)
+	row := db.QueryRow("SELECT name, changeId FROM branches WHERE rowid = ?", branchId)
 	if row.Err() != nil {
 		return "", 0, row.Err()
 	}
 
-	var commitId uint64
+	var changeId uint64
 	var name string
-	err := row.Scan(&name, &commitId)
+	err := row.Scan(&name, &changeId)
 	if errors.Is(sql.ErrNoRows, err) {
 		return "", 0, nil
 	}
-	return name, commitId, err
+	return name, changeId, err
 }
 
-func addBranch(db *sql.DB, branchName string, commitId uint64) (uint64, error) {
-	res, err := db.Exec("INSERT INTO branches(name, commitId) VALUES(?, ?)", branchName, commitId)
+func addBranch(db *sql.DB, branchName string, changeId uint64) (uint64, error) {
+	res, err := db.Exec("INSERT INTO branches(name, changeId) VALUES(?, ?)", branchName, changeId)
 	if err != nil {
 		return 0, err
 	}

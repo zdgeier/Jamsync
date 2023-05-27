@@ -1,14 +1,12 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/authfile"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
 	"github.com/zdgeier/jamsync/internal/server/server"
 	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
@@ -34,16 +32,14 @@ func Push() {
 	}
 	defer closer()
 
-	client := serverclient.NewClient(apiClient, stateFile.ProjectId, stateFile.BranchId)
-
 	fileMetadata := readLocalFileList()
-	localToRemoteDiff, err := client.DiffLocalToRemote(context.Background(), fileMetadata)
+	localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, stateFile.ProjectId, stateFile.BranchId, stateFile.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	if diffHasChanges(localToRemoteDiff) {
-		err = pushFileListDiff(fileMetadata, localToRemoteDiff, client)
+		err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchId, stateFile.ChangeId, fileMetadata, localToRemoteDiff)
 		if err != nil {
 			log.Panic(err)
 		}

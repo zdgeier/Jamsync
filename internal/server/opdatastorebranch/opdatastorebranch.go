@@ -110,30 +110,30 @@ func (s *LocalStore) Write(ownerId string, projectId, branchId uint64, pathHash 
 	return uint64(info.Size()), uint64(writtenBytes), nil
 }
 
-func (s *LocalStore) GetChangedPathHashes(ownerId string, projectId uint64, branchId uint64) [][]byte {
+func (s *LocalStore) GetChangedPathHashes(ownerId string, projectId uint64, branchId uint64) ([][]byte, error) {
 	projectDataDir := fmt.Sprintf("jb/%s/%d/opdatabranch/%d", ownerId, projectId, branchId)
 	dirs, err := ioutil.ReadDir(projectDataDir)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	pathHashes := make([][]byte, 0)
 	for _, dir := range dirs {
 		files, err := ioutil.ReadDir(filepath.Join(projectDataDir, dir.Name()))
 		if err != nil {
-			log.Panic(err)
+			return nil, err
 		}
 
 		for _, file := range files {
 			data, err := hex.DecodeString(strings.TrimSuffix(file.Name(), ".locs"))
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			pathHashes = append(pathHashes, data)
 		}
 	}
 
-	return pathHashes
+	return pathHashes, nil
 }
 
 func (s *LocalStore) DeleteProject(ownerId string, projectId uint64) error {
@@ -143,7 +143,7 @@ func (s *LocalStore) DeleteProject(ownerId string, projectId uint64) error {
 func (s *LocalStore) DeleteBranch(ownerId string, projectId uint64, branchId uint64) error {
 	dirs, err := ioutil.ReadDir(fmt.Sprintf("jb/%s/%d/opdatabranch/%d", ownerId, projectId, branchId))
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	for _, dir := range dirs {
