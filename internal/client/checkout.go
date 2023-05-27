@@ -44,7 +44,7 @@ func Checkout() {
 		os.Exit(0)
 	}
 
-	if state.CommitId != 0 {
+	if state.CommitId == 0 {
 		fmt.Println("Must be on mainline to checkout (for now).")
 		os.Exit(1)
 	}

@@ -82,13 +82,13 @@ func GetBranchInfoHandler() gin.HandlerFunc {
 			return
 		}
 
-		branchId, err := strconv.Atoi(ctx.Param("branchName"))
+		branchIdResponse, err := tempClient.GetBranchId(ctx, &pb.GetBranchIdRequest{ProjectId: id.GetProjectId(), BranchName: ctx.Param("branchName")})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		resp, err := tempClient.GetBranchCurrentChange(ctx, &pb.GetBranchCurrentChangeRequest{ProjectId: id.GetProjectId(), BranchId: uint64(branchId)})
+		resp, err := tempClient.GetBranchCurrentChange(ctx, &pb.GetBranchCurrentChangeRequest{ProjectId: id.GetProjectId(), BranchId: branchIdResponse.BranchId})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
@@ -100,7 +100,7 @@ func GetBranchInfoHandler() gin.HandlerFunc {
 		}
 
 		ctx.JSON(200, &branchInfo{
-			BranchId: uint64(branchId),
+			BranchId: branchIdResponse.BranchId,
 			ChangeId: resp.ChangeId,
 		})
 	}

@@ -37,6 +37,38 @@ func (s JamsyncServer) CreateBranch(ctx context.Context, in *pb.CreateBranchRequ
 	}, nil
 }
 
+func (s JamsyncServer) GetBranchId(ctx context.Context, in *pb.GetBranchIdRequest) (*pb.GetBranchIdResponse, error) {
+	userId, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	branchId, _, err := s.changestore.GetBranchByName(userId, in.GetProjectId(), in.GetBranchName())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetBranchIdResponse{
+		BranchId: branchId,
+	}, nil
+}
+
+func (s JamsyncServer) GetBranchCurrentChange(ctx context.Context, in *pb.GetBranchCurrentChangeRequest) (*pb.GetBranchCurrentChangeResponse, error) {
+	userId, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, changeId, err := s.changestore.GetBranch(userId, in.GetProjectId(), in.GetBranchId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetBranchCurrentChangeResponse{
+		ChangeId: changeId,
+	}, nil
+}
+
 func (s JamsyncServer) ListBranches(ctx context.Context, in *pb.ListBranchesRequest) (*pb.ListBranchesResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {

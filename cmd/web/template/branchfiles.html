@@ -26,6 +26,7 @@
         let projectUrl =  splitPath.slice(0, 5).join('/');
         let projectName = splitPath[2];
         let currBranchName = splitPath[4];
+        console.log(currBranchName, "test")
 
         async function updateFilesTable() {
             const queryParams = new URLSearchParams(window.location.search);
@@ -34,7 +35,7 @@
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
 
-            const branchInfoResp = await fetch(`/api/projects/${projectName}`);
+            const branchInfoResp = await fetch(`/api/projects/${projectName}/branches/${currBranchName}`);
             const branchInfoJson = await branchInfoResp.json();
             const currentChangeId = branchInfoJson.change_id ?? 0;
             const branchId = branchInfoJson.branch_id ?? 0;
@@ -124,7 +125,7 @@
             selectEl.addEventListener("change", () => {
                 let projectName = splitPath[2];
                 let currBranchName = splitPath[4];
-                window.location.href = `${projectUrl}/files/${selectEl.value}/${currentPath}`;
+                window.location.href = `${projectUrl}/branchfiles/${selectEl.value}/${currentPath}`;
             });
         }
         branches()

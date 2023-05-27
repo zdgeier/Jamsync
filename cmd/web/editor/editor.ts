@@ -64,10 +64,14 @@ async function setup() {
       `/api/projects/${projectName}/committedfile/${currentCommitId}/${currentPath}`,
     );
   } else {
-    const currBranchId = splitPath[4];
+    const branchName = splitPath[4];
+    const branchInfoResp = await fetch(`/api/projects/${projectName}/branches/${branchName}`);
+    const branchInfoJson = await branchInfoResp.json();
+    const currentChangeId = branchInfoJson.change_id ?? 0;
+    const branchId = branchInfoJson.branch_id ?? 0;
     const currentPath = splitPath.slice(5).join("/");
     fileResp = await fetch(
-      `/api/projects/${projectName}/branchfile/${currBranchId}/${currentPath}`,
+      `/api/projects/${projectName}/branchfile/${branchId}/${currentChangeId}/${currentPath}`,
     );
   }
   const doc = await fileResp.text();

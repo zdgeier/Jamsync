@@ -19,6 +19,7 @@ service JamsyncAPI {
     rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse);
     rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
     rpc GetBranchCurrentChange(GetBranchCurrentChangeRequest) returns (GetBranchCurrentChangeResponse);
+    rpc GetBranchId(GetBranchIdRequest) returns (GetBranchIdResponse);
 
     // File operations
     rpc ReadCommitChunkHashes(ReadCommitChunkHashesRequest) returns (ReadCommitChunkHashesResponse);
@@ -35,6 +36,15 @@ service JamsyncAPI {
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message GetBranchIdRequest {
+    uint64 project_id = 1;
+    string branch_name = 2;
+}
+
+message GetBranchIdResponse {
+    uint64 branch_id = 1;
 }
 
 message GetBranchCurrentChangeRequest {
