@@ -2,32 +2,32 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
 func Delete() {
-	home, err := os.UserHomeDir()
+	state, err := statefile.Find()
 	if err != nil {
-		log.Panic(err)
+		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
+		os.Exit(0)
 	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Run `jam login` to login to Jamsync first (" + home + "/.jamsyncauth does not exist).")
-		os.Exit(1)
-	} else if err != nil {
+
+	authFile, err := authfile.Authorize()
+	if err != nil {
 		panic(err)
 	}
 
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
 		log.Panic(err)
@@ -40,10 +40,9 @@ func Delete() {
 		log.Panic(err)
 	}
 
-	config, _ := findJamsyncConfig()
-	if config != nil {
+	if err == nil {
 		resp, err := apiClient.DeleteProject(ctx, &pb.DeleteProjectRequest{
-			ProjectId: config.ProjectId,
+			ProjectId: state.ProjectId,
 		})
 		if err != nil {
 			log.Panic(err)

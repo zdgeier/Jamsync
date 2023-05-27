@@ -4,67 +4,22 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamsync/internal/fastcdc"
 	"github.com/zdgeier/jamsync/internal/jamignore"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
-	"github.com/zdgeier/jamsync/internal/server/clientauth"
+	"github.com/zdgeier/jamsync/internal/server/file"
 	"github.com/zeebo/xxh3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-func loginAuth() error {
-	token, err := clientauth.AuthorizeUser()
-	if err != nil {
-		return err
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Panic(err)
-	}
-	err = os.WriteFile(authPath(home), []byte(token), fs.ModePerm)
-	if err != nil {
-		log.Panic(err)
-	}
-	return nil
-}
-
-func findJamsyncConfig() (*pb.ProjectConfig, string) {
-	relCurrPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	currentPath, err := filepath.Abs(relCurrPath)
-	if err != nil {
-		panic(err)
-	}
-	filePath, err := filepath.Abs(fmt.Sprintf("%v/%v", currentPath, ".jamsync"))
-	if err != nil {
-		panic(err)
-	}
-	if configBytes, err := os.ReadFile(filePath); err == nil {
-		config := &pb.ProjectConfig{}
-		err = proto.Unmarshal(configBytes, config)
-		if err != nil {
-			panic(err)
-		}
-		return config, filePath
-	}
-	return nil, ""
-}
-
-func authPath(home string) string {
-	return path.Join(home, ".jamsyncauth")
-}
 
 func diffHasChanges(diff *pb.FileMetadataDiff) bool {
 	for _, diff := range diff.GetDiffs() {
@@ -73,21 +28,6 @@ func diffHasChanges(diff *pb.FileMetadataDiff) bool {
 		}
 	}
 	return false
-}
-
-func writeJamsyncFile(config *pb.ProjectConfig) error {
-	f, err := os.Create(".jamsync")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	configBytes, err := proto.Marshal(config)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(configBytes)
-	return err
 }
 
 type PathFile struct {
@@ -213,7 +153,187 @@ func readLocalFileList() *pb.FileMetadata {
 	}
 }
 
-func pushFileListDiff(fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff, client *serverclient.Client) error {
+func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, paths <-chan string, results chan<- error, numFiles int64) {
+	type pathResponse struct {
+		chunkHashResponse *pb.ReadBranchChunkHashesResponse
+		path              string
+	}
+	chunkHashResponses := make(chan pathResponse, numFiles)
+
+	numUpload := 500
+	numUploadFinished := make(chan bool)
+	for i := 0; i < numUpload; i++ {
+		go func() {
+			writeStream, err := apiClient.WriteBranchOperationsStream(ctx)
+			if err != nil {
+				log.Panic(err)
+			}
+			for resp := range chunkHashResponses {
+				file, err := os.OpenFile(resp.path, os.O_RDONLY, 0755)
+				if err != nil {
+					results <- nil
+				}
+				sourceChunker, err := fastcdc.NewChunker(file, fastcdc.Options{
+					AverageSize: 1024 * 64,
+					Seed:        84372,
+				})
+				if err != nil {
+					results <- nil
+				}
+
+				opsOut := make(chan *pb.Operation)
+				go func() {
+					var blockCt, dataCt, bytes int
+					defer close(opsOut)
+					err := sourceChunker.CreateDelta(resp.chunkHashResponse.GetChunkHashes(), func(op *pb.Operation) error {
+						switch op.Type {
+						case pb.Operation_OpBlock:
+							blockCt++
+						case pb.Operation_OpData:
+							b := make([]byte, len(op.Chunk.Data))
+							copy(b, op.Chunk.Data)
+							op.Chunk.Data = b
+							dataCt++
+							bytes += len(op.Chunk.Data)
+						}
+						opsOut <- op
+						return nil
+					})
+					if err != nil {
+						log.Panic(err)
+					}
+				}()
+				sent := 0
+				for op := range opsOut {
+					err = writeStream.Send(&pb.ProjectOperation{
+						ProjectId: projectId,
+						BranchId:  branchId,
+						PathHash:  pathToHash(resp.path),
+						Op:        op,
+					})
+					if err != nil {
+						log.Panic(err)
+					}
+					sent += 1
+				}
+				results <- file.Close()
+			}
+			_, err = writeStream.CloseAndRecv()
+			if err != nil {
+				log.Panic(err)
+			}
+
+			numUploadFinished <- true
+		}()
+	}
+
+	done := make(chan bool, 1)
+	go func() {
+		for i := 0; i < numUpload; i++ {
+			<-numUploadFinished
+		}
+		close(results)
+		done <- true
+	}()
+
+	numHashDownload := 100
+	numHashDownloadFinished := make(chan bool)
+	for i := 0; i < numHashDownload; i++ {
+		go func() {
+			for path := range paths {
+				chunkHashResp, err := apiClient.ReadBranchChunkHashes(ctx, &pb.ReadBranchChunkHashesRequest{
+					ProjectId: projectId,
+					BranchId:  branchId,
+					PathHash:  pathToHash(path),
+					ModTime:   timestamppb.Now(),
+				})
+				if err != nil {
+					results <- err
+					return
+				}
+				chunkHashResponses <- pathResponse{chunkHashResp, path}
+			}
+			numHashDownloadFinished <- true
+		}()
+	}
+	for i := 0; i < numHashDownload; i++ {
+		<-numHashDownloadFinished
+	}
+	close(chunkHashResponses)
+	<-done
+}
+
+func uploadFile(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, filePath string, sourceReader io.Reader) error {
+	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(context.TODO(), &pb.ReadBranchChunkHashesRequest{
+		ProjectId: projectId,
+		BranchId:  branchId,
+		ChangeId:  changeId,
+		PathHash:  pathToHash(filePath),
+		ModTime:   timestamppb.Now(),
+	})
+	if err != nil {
+		return err
+	}
+
+	sourceChunker, err := fastcdc.NewChunker(sourceReader, fastcdc.Options{
+		AverageSize: 1024 * 64,
+		Seed:        84372,
+	})
+	if err != nil {
+		return err
+	}
+
+	opsOut := make(chan *pb.Operation)
+	tot := 0
+	go func() {
+		var blockCt, dataCt, bytes int
+		defer close(opsOut)
+		err := sourceChunker.CreateDelta(chunkHashesResp.GetChunkHashes(), func(op *pb.Operation) error {
+			tot += int(op.Chunk.GetLength()) + int(op.ChunkHash.GetLength())
+			switch op.Type {
+			case pb.Operation_OpBlock:
+				blockCt++
+			case pb.Operation_OpData:
+				b := make([]byte, len(op.Chunk.Data))
+				copy(b, op.Chunk.Data)
+				op.Chunk.Data = b
+				dataCt++
+				bytes += len(op.Chunk.Data)
+			}
+			opsOut <- op
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	writeStream, err := apiClient.WriteBranchOperationsStream(context.TODO())
+	if err != nil {
+		return err
+	}
+	for op := range opsOut {
+		err = writeStream.Send(&pb.ProjectOperation{
+			ProjectId: projectId,
+			BranchId:  branchId,
+			PathHash:  pathToHash(filePath),
+			Op:        op,
+		})
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	_, err = writeStream.CloseAndRecv()
+	return err
+}
+
+func pathToHash(path string) []byte {
+	h := xxh3.Hash128([]byte(path)).Bytes()
+	return h[:]
+}
+
+func pushFileListDiff(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, prevChangeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 
 	var numFiles int64
@@ -226,7 +346,7 @@ func pushFileListDiff(fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMe
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go client.UploadFiles(ctx, paths, results, numFiles)
+	go uploadBranchFiles(ctx, apiClient, projectId, branchId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -235,28 +355,20 @@ func pushFileListDiff(fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMe
 	}
 	close(paths)
 
-	if os.Args[1] != "sync" {
-		fmt.Println("Syncing files")
-		bar := progressbar.Default(numFiles)
-		for res := range results {
-			if res != nil {
-				log.Panic(res)
-			}
-			bar.Add(1)
+	fmt.Println("Syncing files")
+	bar := progressbar.Default(numFiles)
+	for res := range results {
+		if res != nil {
+			log.Panic(res)
 		}
-	} else {
-		for res := range results {
-			if res != nil {
-				log.Panic(res)
-			}
-		}
+		bar.Add(1)
 	}
 
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return err
 	}
-	err = client.UploadFile(ctx, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
+	err = uploadFile(apiClient, projectId, branchId, prevChangeId, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
 	if err != nil {
 		return err
 	}
@@ -264,7 +376,113 @@ func pushFileListDiff(fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMe
 	return nil
 }
 
-func applyFileListDiff(fileMetadataDiff *pb.FileMetadataDiff, client *serverclient.Client) error {
+func downloadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, paths <-chan string, results chan<- error, numFiles int64) {
+	numUpload := 100
+	numUploadFinished := make(chan bool)
+	for i := 0; i < numUpload; i++ {
+		go func() {
+			for path := range paths {
+				currFile, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0755)
+				if err != nil {
+					fmt.Println(err)
+					results <- nil
+					continue
+				}
+
+				targetChunker, err := fastcdc.NewChunker(currFile, fastcdc.Options{
+					AverageSize: 1024 * 64,
+					Seed:        84372,
+				})
+				if err != nil {
+					results <- err
+					continue
+				}
+
+				sig := make([]*pb.ChunkHash, 0)
+				err = targetChunker.CreateSignature(func(ch *pb.ChunkHash) error {
+					sig = append(sig, ch)
+					return nil
+				})
+				if err != nil {
+					results <- err
+					continue
+				}
+
+				readFileClient, err := apiClient.ReadBranchFile(ctx, &pb.ReadBranchFileRequest{
+					ProjectId:   projectId,
+					BranchId:    branchId,
+					PathHash:    pathToHash(path),
+					ModTime:     timestamppb.Now(),
+					ChunkHashes: sig,
+				})
+				if err != nil {
+					results <- err
+					continue
+				}
+				numOps := 0
+				ops := make(chan *pb.Operation)
+				go func() {
+					for {
+						in, err := readFileClient.Recv()
+						if err == io.EOF {
+							break
+						}
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						ops <- in.Op
+						numOps += 1
+					}
+					close(ops)
+				}()
+				tempFilePath := path + ".jamtemp"
+				tempFile, err := os.OpenFile(tempFilePath, os.O_WRONLY|os.O_CREATE, 0755)
+				if err != nil {
+					results <- err
+					continue
+				}
+
+				currFile.Seek(0, 0)
+				err = targetChunker.ApplyDelta(tempFile, currFile, ops)
+				if err != nil {
+					results <- err
+					continue
+				}
+				err = currFile.Close()
+				if err != nil {
+					results <- err
+					continue
+				}
+				err = tempFile.Close()
+				if err != nil {
+					results <- err
+					continue
+				}
+
+				err = os.Rename(tempFilePath, path)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				results <- nil
+			}
+			numUploadFinished <- true
+		}()
+	}
+
+	done := make(chan bool, 1)
+	go func() {
+		for i := 0; i < numUpload; i++ {
+			<-numUploadFinished
+		}
+		close(results)
+		done <- true
+	}()
+	<-done
+}
+
+func applyFileListDiff(fileMetadataDiff *pb.FileMetadataDiff, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64) error {
 	ctx := context.Background()
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetFile().GetDir() {
@@ -288,7 +506,7 @@ func applyFileListDiff(fileMetadataDiff *pb.FileMetadataDiff, client *serverclie
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go client.DownloadFiles(ctx, paths, results, numFiles)
+	go downloadBranchFiles(ctx, apiClient, projectId, branchId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -315,4 +533,104 @@ func applyFileListDiff(fileMetadataDiff *pb.FileMetadataDiff, client *serverclie
 
 	}
 	return nil
+}
+
+func diffRemoteToLocal(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+	metadataBytes, err := proto.Marshal(fileMetadata)
+	if err != nil {
+		return nil, err
+	}
+	metadataReader := bytes.NewReader(metadataBytes)
+	metadataResult := new(bytes.Buffer)
+	err = file.DownloadBranchFile(apiClient, projectId, branchId, changeId, ".jamsyncfilelist", metadataReader, metadataResult)
+	if err != nil {
+		return nil, err
+	}
+
+	remoteFileMetadata := &pb.FileMetadata{}
+	err = proto.Unmarshal(metadataResult.Bytes(), remoteFileMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	fileMetadataDiff := make(map[string]*pb.FileMetadataDiff_FileDiff, len(fileMetadata.GetFiles()))
+	for filePath := range fileMetadata.GetFiles() {
+		fileMetadataDiff[filePath] = &pb.FileMetadataDiff_FileDiff{
+			Type: pb.FileMetadataDiff_Delete,
+		}
+	}
+
+	for filePath, file := range remoteFileMetadata.GetFiles() {
+		var diffFile *pb.File
+		diffType := pb.FileMetadataDiff_Delete
+		remoteFile, found := fileMetadata.GetFiles()[filePath]
+		if found && proto.Equal(file, remoteFile) {
+			diffType = pb.FileMetadataDiff_NoOp
+		} else if found {
+			diffFile = file
+			diffType = pb.FileMetadataDiff_Update
+		} else {
+			diffFile = file
+			diffType = pb.FileMetadataDiff_Create
+		}
+
+		fileMetadataDiff[filePath] = &pb.FileMetadataDiff_FileDiff{
+			Type: diffType,
+			File: diffFile,
+		}
+	}
+
+	return &pb.FileMetadataDiff{
+		Diffs: fileMetadataDiff,
+	}, err
+}
+
+func diffLocalToRemote(apiClient pb.JamsyncAPIClient, fileMetadata *pb.FileMetadata, projectId uint64, branchId uint64, changeId uint64) (*pb.FileMetadataDiff, error) {
+	metadataBytes, err := proto.Marshal(fileMetadata)
+	if err != nil {
+		return nil, err
+	}
+	metadataReader := bytes.NewReader(metadataBytes)
+	metadataResult := new(bytes.Buffer)
+	err = file.DownloadBranchFile(apiClient, projectId, branchId, changeId, ".jamsyncfilelist", metadataReader, metadataResult)
+	if err != nil {
+		return nil, err
+	}
+
+	remoteFileMetadata := &pb.FileMetadata{}
+	err = proto.Unmarshal(metadataResult.Bytes(), remoteFileMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	fileMetadataDiff := make(map[string]*pb.FileMetadataDiff_FileDiff, len(remoteFileMetadata.GetFiles()))
+	for remoteFilePath := range remoteFileMetadata.GetFiles() {
+		fileMetadataDiff[remoteFilePath] = &pb.FileMetadataDiff_FileDiff{
+			Type: pb.FileMetadataDiff_Delete,
+		}
+	}
+
+	for filePath, file := range fileMetadata.GetFiles() {
+		var diffFile *pb.File
+		diffType := pb.FileMetadataDiff_Delete
+		remoteFile, found := remoteFileMetadata.GetFiles()[filePath]
+		if found && proto.Equal(file, remoteFile) {
+			diffType = pb.FileMetadataDiff_NoOp
+		} else if found {
+			diffFile = file
+			diffType = pb.FileMetadataDiff_Update
+		} else {
+			diffFile = file
+			diffType = pb.FileMetadataDiff_Create
+		}
+
+		fileMetadataDiff[filePath] = &pb.FileMetadataDiff_FileDiff{
+			Type: diffType,
+			File: diffFile,
+		}
+	}
+
+	return &pb.FileMetadataDiff{
+		Diffs: fileMetadataDiff,
+	}, err
 }

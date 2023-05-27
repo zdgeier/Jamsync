@@ -2,51 +2,38 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/zdgeier/jamsync/gen/pb"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
 func Merge() {
-	config, _ := findJamsyncConfig()
-	if config == nil {
+	state, err := statefile.Find()
+	if err != nil {
 		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
 		return
 	}
 
-	home, err := os.UserHomeDir()
+	authFile, err := authfile.Authorize()
 	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		loginAuth()
-		return
-	} else if err != nil {
 		panic(err)
 	}
+
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer closer()
 
-	_, err = apiClient.Ping(context.Background(), &pb.PingRequest{})
-	if err != nil {
-		loginAuth()
-	}
-	client := serverclient.NewClient(apiClient, config.ProjectId, config.BranchId)
-
 	fileMetadata := readLocalFileList()
-	remoteToLocalDiff, err := client.DiffRemoteToLocal(context.Background(), fileMetadata)
+	remoteToLocalDiff, err := diffRemoteToLocal(apiClient, state.ProjectId, state.BranchId, state.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -57,8 +44,8 @@ func Merge() {
 	}
 
 	_, err = apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
-		ProjectId: config.GetProjectId(),
-		BranchId:  config.GetBranchId(),
+		ProjectId: state.ProjectId,
+		BranchId:  state.BranchId,
 	})
 	if err != nil {
 		log.Panic(err)

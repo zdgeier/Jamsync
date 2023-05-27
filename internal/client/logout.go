@@ -2,18 +2,11 @@ package client
 
 import (
 	"fmt"
-	"log"
-	"os"
+
+	"github.com/zdgeier/jamsync/internal/authfile"
 )
 
 func Logout() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Panic(err)
-	}
-	err = os.Remove(authPath(home))
-	if err != nil {
-		log.Panic(err)
-	}
+	authfile.Logout()
 	fmt.Println("~/.jamsyncauth file removed. Run `jam login` to log in.")
 }

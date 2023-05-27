@@ -42,29 +42,18 @@ func (s JamsyncServer) ListUserProjects(ctx context.Context, in *pb.ListUserProj
 	return &pb.ListUserProjectsResponse{Projects: projectsPb}, nil
 }
 
-func (s JamsyncServer) GetProjectConfig(ctx context.Context, in *pb.GetProjectConfigRequest) (*pb.ProjectConfig, error) {
+func (s JamsyncServer) GetProjectId(ctx context.Context, in *pb.GetProjectIdRequest) (*pb.GetProjectIdResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var projectId uint64
-	var projectName string
-	if in.GetProjectName() == "" && in.GetProjectId() != 0 {
-		projectName, err = s.db.GetProjectName(in.GetProjectId(), userId)
-		if err != nil {
-			return nil, err
-		}
-		projectId = in.GetProjectId()
-	} else {
-		projectId, err = s.db.GetProjectId(in.GetProjectName(), userId)
-		if err != nil {
-			return nil, err
-		}
-		projectName = in.GetProjectName()
+	projectId, err := s.db.GetProjectId(in.GetProjectName(), userId)
+	if err != nil {
+		return nil, err
 	}
 
-	return &pb.ProjectConfig{ProjectId: projectId, ProjectName: projectName}, nil
+	return &pb.GetProjectIdResponse{ProjectId: projectId}, nil
 }
 
 func (s JamsyncServer) DeleteProject(ctx context.Context, in *pb.DeleteProjectRequest) (*pb.DeleteProjectResponse, error) {

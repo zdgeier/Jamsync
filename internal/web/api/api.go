@@ -3,12 +3,14 @@ package api
 import (
 	"bytes"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/server/client"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"go.starlark.net/lib/proto"
 	"golang.org/x/oauth2"
 )
 
@@ -41,7 +43,7 @@ func ProjectBrowseHandler() gin.HandlerFunc {
 		}
 		defer closer()
 
-		config, err := tempClient.GetProjectConfig(ctx, &pb.GetProjectConfigRequest{
+		id, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
 			ProjectName: ctx.Param("projectName"),
 		})
 		if err != nil {
@@ -54,7 +56,7 @@ func ProjectBrowseHandler() gin.HandlerFunc {
 			branchId = 0
 		} else {
 			branchResp, err := tempClient.GetBranch(ctx, &pb.GetBranchRequest{
-				ProjectId:  config.ProjectId,
+				ProjectId:  id.GetProjectId(),
 				BranchName: ctx.Param("branchName"),
 			})
 			if err != nil {
@@ -64,13 +66,37 @@ func ProjectBrowseHandler() gin.HandlerFunc {
 			branchId = branchResp.GetBranchId()
 		}
 
-		client := client.NewClient(tempClient, config.GetProjectId(), uint64(branchId))
-		resp, err := client.BrowseProject(ctx.Param("path")[1:])
+		metadataResult := new(bytes.Buffer)
+		err = client.DownloadCommittedFile(ctx, tempClient, id.GetProjectId(), uint64(branchId), ".jamsyncfilelist", bytes.NewReader([]byte{}), metadataResult)
 		if err != nil {
 			ctx.Error(err)
 			return
 		}
-		ctx.JSON(200, resp)
+		fileMetadata := &pb.FileMetadata{}
+		err = proto.Unmarshal(metadataResult.Bytes(), fileMetadata)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		directoryNames := make([]string, 0, len(fileMetadata.GetFiles()))
+		fileNames := make([]string, 0, len(fileMetadata.GetFiles()))
+		requestPath := filepath.Clean(ctx.Param("path")[1:])
+		for path, file := range fileMetadata.GetFiles() {
+			pathDir := filepath.Dir(path)
+			if (path == "" && pathDir == ".") || pathDir == requestPath {
+				if file.GetDir() {
+					directoryNames = append(directoryNames, filepath.Base(path))
+				} else {
+					fileNames = append(fileNames, filepath.Base(path))
+				}
+			}
+		}
+
+		ctx.JSON(200, &pb.BrowseProjectResponse{
+			Directories: directoryNames,
+			Files:       fileNames,
+		})
 	}
 }
 
@@ -84,7 +110,7 @@ func GetFileHandler() gin.HandlerFunc {
 		}
 		defer closer()
 
-		config, err := tempClient.GetProjectConfig(ctx, &pb.GetProjectConfigRequest{
+		config, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
 			ProjectName: ctx.Param("projectName"),
 		})
 		if err != nil {
@@ -123,7 +149,7 @@ func GetBranchesHandler() gin.HandlerFunc {
 		}
 		defer closer()
 
-		config, err := tempClient.GetProjectConfig(ctx, &pb.GetProjectConfigRequest{
+		config, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
 			ProjectName: ctx.Param("projectName"),
 		})
 		if err != nil {

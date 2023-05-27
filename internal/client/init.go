@@ -2,15 +2,15 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/zdgeier/jamsync/gen/pb"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
@@ -31,15 +31,13 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 	}
 	fmt.Println("Initializing a project at " + currentPath)
 
-	client := serverclient.NewClient(apiClient, resp.ProjectId, 0)
-
 	fileMetadata := readLocalFileList()
-	fileMetadataDiff, err := client.DiffLocalToRemote(context.Background(), fileMetadata)
+	fileMetadataDiff, err := diffLocalToRemote(apiClient, fileMetadata, resp.ProjectId, 0, 0)
 	if err != nil {
 		panic(err)
 	}
 
-	err = pushFileListDiff(fileMetadata, fileMetadataDiff, client)
+	err = pushFileListDiff(apiClient, resp.ProjectId, 0, 0, fileMetadata, fileMetadataDiff)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +59,12 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 		log.Panic(err)
 	}
 
-	err = writeJamsyncFile(client.ProjectConfig())
+	err = statefile.StateFile{
+		ProjectId: resp.ProjectId,
+		BranchId:  0,
+		ChangeId:  0,
+		CommitId:  0,
+	}.Save()
 	if err != nil {
 		panic(err)
 	}
@@ -72,63 +75,63 @@ func initExistingProject(apiClient pb.JamsyncAPIClient) {
 	var projectName string
 	fmt.Scan(&projectName)
 
-	resp, err := apiClient.GetProjectConfig(context.Background(), &pb.GetProjectConfigRequest{
+	resp, err := apiClient.GetProjectId(context.Background(), &pb.GetProjectIdRequest{
 		ProjectName: projectName,
 	})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	client := serverclient.NewClient(apiClient, resp.ProjectId, 0)
-
-	diffRemoteToLocalResp, err := client.DiffRemoteToLocal(context.Background(), &pb.FileMetadata{})
+	getBranchResp, err := apiClient.GetBranch(context.Background(), &pb.GetBranchRequest{
+		ProjectId:  resp.ProjectId,
+		BranchName: "main",
+	})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = applyFileListDiff(diffRemoteToLocalResp, client)
+	diffRemoteToLocalResp, err := diffRemoteToLocal(apiClient, resp.ProjectId, getBranchResp.BranchId, getBranchResp.ChangeId, &pb.FileMetadata{})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = writeJamsyncFile(client.ProjectConfig())
+	err = applyFileListDiff(diffRemoteToLocalResp, apiClient, resp.GetProjectId(), getBranchResp.GetBranchId())
 	if err != nil {
 		log.Panic(err)
+	}
+
+	//TODO
+	err = statefile.StateFile{
+		ProjectId: resp.ProjectId,
+		BranchId:  getBranchResp.GetBranchId(),
+		ChangeId:  getBranchResp.GetChangeId(),
+		CommitId:  0,
+	}.Save()
+	if err != nil {
+		panic(err)
 	}
 }
 
 func InitConfig() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Run `jam login` to login to Jamsync first (" + home + "/.jamsyncauth does not exist).")
+	_, err := statefile.Find()
+	if err == nil {
+		fmt.Println("There's already a project initialized file here. Remove the `.jamsync` file to reinitialize.")
 		os.Exit(1)
-	} else if err != nil {
-		panic(err)
 	}
 
-	config, path := findJamsyncConfig()
-	if config != nil {
-		fmt.Println("There's already a config at " + path + ".")
+	authFile, err := authfile.Authorize()
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
 		log.Panic(err)
 	}
 	defer closer()
-
-	_, err = apiClient.Ping(context.Background(), &pb.PingRequest{})
-	if err != nil {
-		fmt.Println(err)
-		loginAuth()
-	}
 
 	for {
 		fmt.Print("Create a new project (y/n)? ")

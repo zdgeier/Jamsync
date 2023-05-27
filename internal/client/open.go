@@ -2,50 +2,39 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
-	"os"
 
 	"github.com/pkg/browser"
 	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/jamenv"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
 func Open() {
-	config, _ := findJamsyncConfig()
-	if config == nil {
+	state, err := statefile.Find()
+	if err != nil {
 		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
 		return
 	}
 
-	home, err := os.UserHomeDir()
+	authFile, err := authfile.Authorize()
 	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		loginAuth()
-		return
-	} else if err != nil {
 		panic(err)
 	}
+
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer closer()
 
-	pingRes, err := apiClient.Ping(context.Background(), &pb.PingRequest{})
-	if err != nil {
-		loginAuth()
-	}
-	configRes, err := apiClient.GetProjectConfig(context.Background(), &pb.GetProjectConfigRequest{
-		ProjectId: config.ProjectId,
+	configRes, err := apiClient.GetProjectName(context.Background(), &pb.GetProjectNameRequest{
+		ProjectId: state.ProjectId,
 	})
 	if err != nil {
 		panic(err)
@@ -56,7 +45,7 @@ func Open() {
 		url = "http://localhost:8081/"
 	}
 
-	err = browser.OpenURL(url + pingRes.GetUsername() + "/" + configRes.ProjectName + "/files/main")
+	err = browser.OpenURL(url + authFile.Username + "/" + configRes.ProjectName + "/files/main")
 	if err != nil {
 		panic(err)
 	}

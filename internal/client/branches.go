@@ -2,54 +2,45 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/zdgeier/jamsync/gen/pb"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
 func ListBranches() {
-	home, err := os.UserHomeDir()
+	authFile, err := authfile.Authorize()
 	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Run `jam login` to login to Jamsync first (" + home + "/.jamsyncauth does not exist).")
-		os.Exit(1)
-	} else if err != nil {
 		panic(err)
 	}
 
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer closer()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
-	config, _ := findJamsyncConfig()
-	if config == nil {
+	state, err := statefile.Find()
+	if err != nil {
 		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
-		return
+		os.Exit(0)
 	}
 
-	client := serverclient.NewClient(apiClient, config.ProjectId, config.BranchId)
-
-	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: client.ProjectConfig().ProjectId})
+	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
 	if err != nil {
 		log.Panic(err)
 	}

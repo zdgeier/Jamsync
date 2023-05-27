@@ -2,15 +2,15 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/zdgeier/jamsync/gen/pb"
-	serverclient "github.com/zdgeier/jamsync/internal/server/client"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
@@ -19,20 +19,13 @@ func Checkout() {
 		fmt.Println("jam checkout <branch name>")
 		return
 	}
-	home, err := os.UserHomeDir()
+	authFile, err := authfile.Authorize()
 	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Run `jam login` to login to Jamsync first (" + home + "/.jamsyncauth does not exist).")
-		os.Exit(1)
-	} else if err != nil {
 		panic(err)
 	}
 
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
 		log.Panic(err)
@@ -42,36 +35,34 @@ func Checkout() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
-	config, _ := findJamsyncConfig()
-	if config == nil {
-		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
-		return
-	}
-
-	client := serverclient.NewClient(apiClient, config.ProjectId, config.BranchId)
-
-	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: client.ProjectConfig().ProjectId})
+	state, err := statefile.Find()
 	if err != nil {
-		log.Panic(err)
+		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
+		os.Exit(0)
+	}
+
+	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
+	if err != nil {
+		panic(err)
 	}
 
 	if branchId, ok := resp.GetBranches()[os.Args[2]]; ok {
-		if branchId == config.BranchId {
+		if branchId == state.BranchId {
 			fmt.Println("Already on", os.Args[2])
 			return
 		}
 		// if branch already exists, do a pull
 		fileMetadata := readLocalFileList()
-		remoteToLocalDiff, err := client.DiffRemoteToLocal(context.Background(), fileMetadata)
+		remoteToLocalDiff, err := diffRemoteToLocal(apiClient, state.ProjectId, state.BranchId, state.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if diffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiff(remoteToLocalDiff, client)
+			err = applyFileListDiff(remoteToLocalDiff, apiClient, state.ProjectId, state.BranchId)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -83,16 +74,22 @@ func Checkout() {
 		} else {
 			fmt.Println("No changes to pull")
 		}
-		client := serverclient.NewClient(apiClient, config.ProjectId, branchId)
-		writeJamsyncFile(client.ProjectConfig())
+
+		err = state.Save()
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		// otherwise, just create a new branch
-		resp, err := apiClient.CreateBranch(ctx, &pb.CreateBranchRequest{ProjectId: client.ProjectConfig().ProjectId, BranchName: os.Args[2]})
+		resp, err := apiClient.CreateBranch(ctx, &pb.CreateBranchRequest{ProjectId: state.ProjectId, BranchName: os.Args[2]})
 		if err != nil {
 			log.Panic(err)
 		}
-		client := serverclient.NewClient(apiClient, config.ProjectId, resp.GetBranchId())
-		writeJamsyncFile(client.ProjectConfig())
+
+		err = state.Save()
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println("Switched to new branch", os.Args[2], "with id", resp.GetBranchId())
 	}
 }

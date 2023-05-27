@@ -2,45 +2,38 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamsync/internal/authfile"
 	serverclient "github.com/zdgeier/jamsync/internal/server/client"
 	"github.com/zdgeier/jamsync/internal/server/server"
+	"github.com/zdgeier/jamsync/internal/statefile"
 	"golang.org/x/oauth2"
 )
 
 func Pull() {
-	home, err := os.UserHomeDir()
+	state, err := statefile.Find()
 	if err != nil {
-		log.Panic(err)
-	}
-	accessToken, err := os.ReadFile(authPath(home))
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Run `jam login` to login to Jamsync first (" + home + "/.jamsyncauth does not exist).")
-		os.Exit(1)
-	} else if err != nil {
-		panic(err)
-	}
-
-	config, _ := findJamsyncConfig()
-	if config == nil {
 		fmt.Println("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
 		return
 	}
 
+	authFile, err := authfile.Authorize()
+	if err != nil {
+		panic(err)
+	}
+
 	apiClient, closer, err := server.Connect(&oauth2.Token{
-		AccessToken: string(accessToken),
+		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
 		log.Panic(err)
 	}
 	defer closer()
 
-	client := serverclient.NewClient(apiClient, config.ProjectId, config.BranchId)
+	client := serverclient.NewClient(apiClient, state.ProjectId, state.BranchId)
 
 	fileMetadata := readLocalFileList()
 	remoteToLocalDiff, err := client.DiffRemoteToLocal(context.Background(), fileMetadata)
@@ -53,7 +46,6 @@ func Pull() {
 		if err != nil {
 			log.Panic(err)
 		}
-		writeJamsyncFile(client.ProjectConfig())
 		for key, val := range remoteToLocalDiff.GetDiffs() {
 			if val.Type != pb.FileMetadataDiff_NoOp {
 				fmt.Println("Pulled", key)

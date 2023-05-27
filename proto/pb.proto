@@ -9,7 +9,9 @@ service JamsyncAPI {
     rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
     rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
     rpc ListUserProjects(ListUserProjectsRequest) returns (ListUserProjectsResponse);
-    rpc GetProjectConfig(GetProjectConfigRequest) returns (ProjectConfig);
+    rpc GetProjectId(GetProjectIdRequest) returns (GetProjectIdResponse);
+    rpc GetProjectName(GetProjectNameRequest) returns (GetProjectNameResponse);
+    // rpc GetProjectConfig(GetProjectConfigRequest) returns (ProjectConfig);
 
     // Change operations
     rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse);
@@ -32,6 +34,22 @@ service JamsyncAPI {
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message GetProjectNameRequest {
+    uint64 project_id = 1;
+}
+
+message GetProjectNameResponse {
+    string project_name = 1;
+}
+
+message GetProjectIdRequest {
+    string project_name = 1;
+}
+
+message GetProjectIdResponse {
+    uint64 project_id = 1;
 }
 
 message EditorStreamMessage{
@@ -102,6 +120,7 @@ message CreateBranchResponse {
 
 message ListBranchesRequest {
     uint64 project_id = 1;
+    string project_name = 2;
 }
 message ListBranchesResponse {
     map<string, uint64> branches = 1;
@@ -155,7 +174,7 @@ message GetBranchRequest {
 }
 message GetBranchResponse {
     uint64 branch_id = 1;
-    uint64 commit_id = 2;
+    uint64 change_id = 2;
 }
 
 message DeleteProjectRequest {
@@ -199,17 +218,17 @@ message BrowseProjectResponse {
     repeated string files = 2;
 }
 
-message GetProjectConfigRequest {
-    string project_name = 1;
-    uint64 project_id = 2;
-    string branch_name = 3;
-}
-
-message ProjectConfig {
-    uint64 projectId = 1;
-    uint64 branchId = 2;
-    string project_name = 4;
-}
+// message GetProjectConfigRequest {
+//     string project_name = 1;
+//     uint64 project_id = 2;
+//     string branch_name = 3;
+// }
+// 
+// message ProjectConfig {
+//     uint64 projectId = 1;
+//     uint64 branchId = 2;
+//     string project_name = 4;
+// }
 
 message PingRequest {}
 message PingResponse {
