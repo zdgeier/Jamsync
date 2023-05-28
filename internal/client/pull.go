@@ -32,20 +32,20 @@ func Pull() {
 	}
 	defer closer()
 
-	if state.CommitId == 0 {
-		changeResp, err := apiClient.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchId})
+	if state.CommitInfo == nil {
+		changeResp, err := apiClient.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchInfo.BranchId})
 		if err != nil {
 			panic(err)
 		}
 
 		fileMetadata := readLocalFileList()
-		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchId, changeResp.GetChangeId(), fileMetadata)
+		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if diffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
+			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -59,8 +59,10 @@ func Pull() {
 		}
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchId:  state.BranchId,
-			ChangeId:  changeResp.ChangeId,
+			BranchInfo: &statefile.BranchInfo{
+				BranchId: state.BranchInfo.BranchId,
+				ChangeId: changeResp.ChangeId,
+			},
 		}.Save()
 		if err != nil {
 			panic(err)
@@ -88,12 +90,14 @@ func Pull() {
 				}
 			}
 		} else {
-			fmt.Println("No changes to pull")
+			fmt.Println("No commits to pull")
 		}
 
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			CommitId:  commitResp.CommitId,
+			CommitInfo: &statefile.CommitInfo{
+				CommitId: commitResp.CommitId,
+			},
 		}.Save()
 		if err != nil {
 			panic(err)

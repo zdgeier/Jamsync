@@ -11,85 +11,69 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func UploadBranchFile(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, filePath string, sourceReader io.Reader) error {
-	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(ctx, &pb.ReadBranchChunkHashesRequest{
-		ProjectId: projectId,
-		BranchId:  branchId,
-		PathHash:  pathToHash(filePath),
-		ModTime:   timestamppb.Now(),
-	})
-	if err != nil {
-		return err
-	}
-
-	sourceChunker, err := fastcdc.NewChunker(sourceReader, fastcdc.Options{
-		AverageSize: 1024 * 64,
-		Seed:        84372,
-	})
-	if err != nil {
-		return err
-	}
-
-	opsOut := make(chan *pb.Operation)
-	tot := 0
-	go func() {
-		var blockCt, dataCt, bytes int
-		defer close(opsOut)
-		err := sourceChunker.CreateDelta(chunkHashesResp.GetChunkHashes(), func(op *pb.Operation) error {
-			tot += int(op.Chunk.GetLength()) + int(op.ChunkHash.GetLength())
-			switch op.Type {
-			case pb.Operation_OpBlock:
-				blockCt++
-			case pb.Operation_OpData:
-				b := make([]byte, len(op.Chunk.Data))
-				copy(b, op.Chunk.Data)
-				op.Chunk.Data = b
-				dataCt++
-				bytes += len(op.Chunk.Data)
-			}
-			opsOut <- op
-			return nil
-		})
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	writeStream, err := apiClient.WriteBranchOperationsStream(ctx)
-	if err != nil {
-		return err
-	}
-	sent := 0
-	for op := range opsOut {
-		err = writeStream.Send(&pb.ProjectOperation{
-			ProjectId: projectId,
-			BranchId:  branchId,
-			PathHash:  pathToHash(filePath),
-			Op:        op,
-		})
-		if err != nil {
-			log.Panic(err)
-		}
-		sent += 1
-	}
-	// We have to send a tombstone if we have not generated any ops (empty file)
-	if sent == 0 {
-		err = writeStream.Send(&pb.ProjectOperation{
-			ProjectId: projectId,
-			BranchId:  branchId,
-			PathHash:  pathToHash(filePath),
-			Op: &pb.Operation{
-				Type:  pb.Operation_OpData,
-				Chunk: &pb.Chunk{},
-			},
-		})
-		if err != nil {
-			log.Panic(err)
-		}
-	}
-	_, err = writeStream.CloseAndRecv()
-	return err
-}
+// func UploadBranchFile(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, filePath string, sourceReader io.Reader) (*pb.WriteOperationStreamResponse, error) {
+// 	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(ctx, &pb.ReadBranchChunkHashesRequest{
+// 		ProjectId: projectId,
+// 		BranchId:  branchId,
+// 		ChangeId:  changeId,
+// 		PathHash:  pathToHash(filePath),
+// 		ModTime:   timestamppb.Now(),
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	sourceChunker, err := fastcdc.NewChunker(sourceReader, fastcdc.Options{
+// 		AverageSize: 1024 * 64,
+// 		Seed:        84372,
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	opsOut := make(chan *pb.Operation)
+// 	tot := 0
+// 	go func() {
+// 		var blockCt, dataCt, bytes int
+// 		defer close(opsOut)
+// 		err := sourceChunker.CreateDelta(chunkHashesResp.GetChunkHashes(), func(op *pb.Operation) error {
+// 			tot += int(op.Chunk.GetLength()) + int(op.ChunkHash.GetLength())
+// 			switch op.Type {
+// 			case pb.Operation_OpBlock:
+// 				blockCt++
+// 			case pb.Operation_OpData:
+// 				b := make([]byte, len(op.Chunk.Data))
+// 				copy(b, op.Chunk.Data)
+// 				op.Chunk.Data = b
+// 				dataCt++
+// 				bytes += len(op.Chunk.Data)
+// 			}
+// 			opsOut <- op
+// 			return nil
+// 		})
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 	}()
+//
+// 	writeStream, err := apiClient.WriteBranchOperationsStream(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	for op := range opsOut {
+// 		err = writeStream.Send(&pb.ProjectOperation{
+// 			ProjectId: projectId,
+// 			BranchId:  branchId,
+// 			PathHash:  pathToHash(filePath),
+// 			Op:        op,
+// 		})
+// 		if err != nil {
+// 			log.Panic(err)
+// 		}
+// 	}
+//
+// 	return writeStream.CloseAndRecv()
+// }
 
 func DownloadCommittedFile(client pb.JamsyncAPIClient, projectId uint64, commitId uint64, filePath string, localReader io.ReadSeeker, localWriter io.Writer) error {
 	sig := make([]*pb.ChunkHash, 0)

@@ -42,7 +42,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 		panic(err)
 	}
 
-	err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
+	_, err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +66,9 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 
 	err = statefile.StateFile{
 		ProjectId: resp.ProjectId,
-		CommitId:  mergeResp.CommitId,
+		CommitInfo: &statefile.CommitInfo{
+			CommitId: mergeResp.CommitId,
+		},
 	}.Save()
 	if err != nil {
 		panic(err)
@@ -88,6 +90,9 @@ func initExistingProject(apiClient pb.JamsyncAPIClient) {
 	commitResp, err := apiClient.GetProjectCurrentCommit(context.Background(), &pb.GetProjectCurrentCommitRequest{
 		ProjectId: resp.GetProjectId(),
 	})
+	if err != nil {
+		log.Panic(err)
+	}
 
 	diffRemoteToLocalResp, err := diffRemoteToLocalCommit(apiClient, resp.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
 	if err != nil {
@@ -101,7 +106,9 @@ func initExistingProject(apiClient pb.JamsyncAPIClient) {
 
 	err = statefile.StateFile{
 		ProjectId: resp.ProjectId,
-		CommitId:  commitResp.CommitId,
+		CommitInfo: &statefile.CommitInfo{
+			CommitId: commitResp.CommitId,
+		},
 	}.Save()
 	if err != nil {
 		panic(err)

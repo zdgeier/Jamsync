@@ -33,7 +33,7 @@ func Open() {
 	}
 	defer closer()
 
-	configRes, err := apiClient.GetProjectName(context.Background(), &pb.GetProjectNameRequest{
+	nameResp, err := apiClient.GetProjectName(context.Background(), &pb.GetProjectNameRequest{
 		ProjectId: state.ProjectId,
 	})
 	if err != nil {
@@ -41,11 +41,13 @@ func Open() {
 	}
 
 	url := "https://jamsync.dev/"
+	username := authFile.Username
 	if jamenv.Env() == jamenv.Local {
 		url = "http://localhost:8081/"
+		username = "test@jamsync.dev"
 	}
 
-	err = browser.OpenURL(url + authFile.Username + "/" + configRes.ProjectName + "/files/main")
+	err = browser.OpenURL(url + username + "/" + nameResp.ProjectName + "/committedfiles/")
 	if err != nil {
 		panic(err)
 	}

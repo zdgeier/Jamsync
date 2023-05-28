@@ -77,16 +77,15 @@ func (s JamsyncServer) regenCommittedFile(userId string, projectId uint64, commi
 	ops := make(chan *pb.Operation)
 	go func() {
 		for _, loc := range operationLocations.GetOpLocs() {
-			if loc.GetDataLocation() == 0 {
-				op, err := s.opdatastorecommit.Read(userId, projectId, pathHash, loc.GetOffset(), loc.GetLength())
-				if err != nil {
-					log.Panic(err)
-				}
-				ops <- op
+			op, err := s.opdatastorecommit.Read(userId, projectId, pathHash, loc.GetOffset(), loc.GetLength())
+			if err != nil {
+				log.Panic(err)
 			}
+			ops <- op
 		}
 		close(ops)
 	}()
+
 	result := new(bytes.Buffer)
 	resultChunker, err := fastcdc.NewChunker(result, fastcdc.Options{
 		AverageSize: 1024 * 64,
@@ -177,22 +176,27 @@ func (s JamsyncServer) MergeBranch(ctx context.Context, in *pb.MergeBranchReques
 			return nil, err
 		}
 	}
-	// Regen every file that has been changed in branch
-	changedPathHashes, err := s.opdatastorebranch.GetChangedPathHashes(userId, in.GetProjectId(), in.GetBranchId())
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, err
-	}
-
-	maxChangeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
-	if err != nil {
-		return nil, err
-	}
 
 	isFirstCommit := false
 	prevCommitId, err := s.oplocstorecommit.MaxCommitId(userId, in.GetProjectId())
 	if err != nil && errors.Is(err, os.ErrNotExist) {
 		isFirstCommit = true
 	} else if err != nil {
+		return nil, err
+	}
+
+	// Regen every file that has been changed in branch
+	changedPathHashes, err := s.opdatastorebranch.GetChangedPathHashes(userId, in.GetProjectId(), in.GetBranchId())
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	if len(changedPathHashes) == 0 {
+		// NO CHANGES
+		return &pb.MergeBranchResponse{CommitId: prevCommitId}, nil
+	}
+
+	maxChangeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
+	if err != nil {
 		return nil, err
 	}
 
@@ -256,46 +260,49 @@ func (s JamsyncServer) MergeBranch(ctx context.Context, in *pb.MergeBranchReques
 					results <- err
 					return
 				}
-				var dataLocation uint64
+
 				var chunkHash *pb.ChunkHash
 				if op.GetType() == pb.Operation_OpData {
-					dataLocation = 0
 					chunkHash = &pb.ChunkHash{
 						Offset: op.GetChunk().GetOffset(),
 						Length: op.GetChunk().GetLength(),
 						Hash:   op.GetChunk().GetHash(),
 					}
 				} else {
-					opLocs, err := s.oplocstorecommit.ListOperationLocations(userId, in.GetProjectId(), prevCommitId, []byte(changedPathHash))
-					if err != nil {
-						results <- err
-						return
-					}
-					for _, loc := range opLocs.GetOpLocs() {
-						if loc.GetChunkHash().GetHash() == op.GetChunkHash().GetHash() &&
-							loc.GetChunkHash().GetLength() == op.GetChunkHash().GetLength() &&
-							loc.GetChunkHash().GetOffset() == op.GetChunkHash().GetOffset() {
-							offset = loc.GetOffset()
-							length = loc.GetLength()
-							dataLocation = loc.DataLocation + 1
-							break
-						}
-					}
 					chunkHash = &pb.ChunkHash{
 						Offset: op.GetChunkHash().GetOffset(),
 						Length: op.GetChunkHash().GetLength(),
 						Hash:   op.GetChunkHash().GetHash(),
 					}
-					if dataLocation == 0 && prevCommitId != 0 {
-						results <- fmt.Errorf("data location cannot be 0 when using a OpBlock in merge")
+				}
+
+				if op.GetType() == pb.Operation_OpBlock {
+					opLocs, err := s.oplocstorecommit.ListOperationLocations(userId, in.GetProjectId(), prevCommitId, []byte(changedPathHash))
+					if err != nil {
+						results <- err
 						return
 					}
+					found := false
+					var reusedOffset, reusedLength uint64
+					for _, loc := range opLocs.GetOpLocs() {
+						if loc.GetChunkHash().GetHash() == op.GetChunkHash().GetHash() {
+							found = true
+							reusedOffset = loc.GetOffset()
+							reusedLength = loc.GetLength()
+							break
+						}
+					}
+					if !found {
+						log.Fatal("Operation of type block but hash could not be found")
+					}
+					offset = reusedOffset
+					length = reusedLength
 				}
+
 				operationLocation := &pb.CommitOperationLocations_OperationLocation{
-					Offset:       offset,
-					Length:       length,
-					DataLocation: dataLocation,
-					ChunkHash:    chunkHash,
+					Offset:    offset,
+					Length:    length,
+					ChunkHash: chunkHash,
 				}
 				pathHashToOpLocs[string(changedPathHash)] = append(pathHashToOpLocs[string(changedPathHash)], operationLocation)
 			}
@@ -358,7 +365,13 @@ func (s JamsyncServer) MergeBranch(ctx context.Context, in *pb.MergeBranchReques
 		}
 	}
 
-	return &pb.MergeBranchResponse{
-		CommitId: prevCommitId + 1,
-	}, nil
+	if isFirstCommit {
+		return &pb.MergeBranchResponse{
+			CommitId: prevCommitId,
+		}, nil
+	} else {
+		return &pb.MergeBranchResponse{
+			CommitId: prevCommitId + 1,
+		}, nil
+	}
 }

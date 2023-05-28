@@ -8,14 +8,23 @@ import (
 	"path/filepath"
 )
 
+type BranchInfo struct {
+	BranchId uint64 `json:"branchid"`
+	ChangeId uint64 `json:"changeid"`
+}
+
+type CommitInfo struct {
+	CommitId uint64 `json:"commitid"`
+}
+
 type StateFile struct {
-	ProjectId uint64 `json:"projectid"`
-	BranchId  uint64 `json:"branchid"`
-	ChangeId  uint64 `json:"changeid"`
-	CommitId  uint64 `json:"commitid"`
+	ProjectId  uint64 `json:"projectid"`
+	BranchInfo *BranchInfo
+	CommitInfo *CommitInfo
 }
 
 func (s StateFile) Save() error {
+	fmt.Println("writing", s)
 	f, err := os.Create(".jamsync")
 	if err != nil {
 		return err

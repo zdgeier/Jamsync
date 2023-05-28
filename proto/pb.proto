@@ -86,7 +86,9 @@ message EditorStreamMessage{
     bytes update_data = 3;
 }
 
-message WriteOperationStreamResponse {}
+message WriteOperationStreamResponse {
+    uint64 change_id = 1;
+}
 
 message FileMetadataDiff {
     enum Type {
@@ -112,7 +114,8 @@ message BranchOperationLocations {
         uint64 offset = 1;
         uint64 length = 2;
         ChunkHash chunk_hash = 3;
-        uint64 data_location = 4;
+        uint64 commit_offset = 4;
+        uint64 commit_length = 5;
     }
     repeated OperationLocation opLocs = 6;
 }
@@ -126,7 +129,6 @@ message CommitOperationLocations {
         uint64 offset = 1;
         uint64 length = 2;
         ChunkHash chunk_hash = 3;
-        uint64 data_location = 4;
     }
     repeated OperationLocation opLocs = 5;
 }

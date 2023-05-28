@@ -143,48 +143,69 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 		}
 
 		pathHash := in.GetPathHash()
-		offset, length, err := s.opdatastorebranch.Write(userId, projectId, branchId, pathHash, in.GetOp())
-		if err != nil {
-			return err
-		}
 
-		var dataLocation uint64
 		var chunkHash *pb.ChunkHash
+		var branchOffset, branchLength, commitOffset, commitLength uint64
 		if in.GetOp().GetType() == pb.Operation_OpData {
-			dataLocation = 0
+			branchOffset, branchLength, err = s.opdatastorebranch.Write(userId, projectId, branchId, pathHash, in.GetOp())
+			if err != nil {
+				return err
+			}
 			chunkHash = &pb.ChunkHash{
 				Offset: in.GetOp().GetChunk().GetOffset(),
 				Length: in.GetOp().GetChunk().GetLength(),
 				Hash:   in.GetOp().GetChunk().GetHash(),
 			}
 		} else {
-			opLocs, err := s.oplocstorebranch.ListOperationLocations(projectOwner, projectId, branchId, currentMaxChangeId, pathHash)
-			if err != nil {
-				return err
-			}
-			for _, loc := range opLocs.GetOpLocs() {
-				if loc.GetChunkHash().GetHash() == in.GetOp().GetChunkHash().GetHash() &&
-					loc.GetChunkHash().GetLength() == in.GetOp().GetChunkHash().GetLength() &&
-					loc.GetChunkHash().GetOffset() == in.GetOp().GetChunkHash().GetOffset() {
-					offset = loc.GetOffset()
-					length = loc.GetLength()
-					dataLocation = loc.DataLocation + 1
-					break
-				}
-			}
 			chunkHash = &pb.ChunkHash{
 				Offset: in.GetOp().GetChunkHash().GetOffset(),
 				Length: in.GetOp().GetChunkHash().GetLength(),
 				Hash:   in.GetOp().GetChunkHash().GetHash(),
 			}
-			if dataLocation == 0 {
-				return fmt.Errorf("data location cannot be 0 when using a OpBlock in branch")
+		}
+
+		if in.GetOp().GetType() == pb.Operation_OpBlock {
+			opLocs, err := s.oplocstorebranch.ListOperationLocations(projectOwner, projectId, branchId, currentMaxChangeId, pathHash)
+			if err != nil {
+				return err
+			}
+			for _, loc := range opLocs.GetOpLocs() {
+				if loc.GetChunkHash().GetHash() == in.GetOp().GetChunkHash().GetHash() {
+					branchOffset = loc.GetOffset()
+					branchLength = loc.GetLength()
+					break
+				}
+			}
+
+			if branchOffset == 0 && branchLength == 0 {
+				_, commitId, err := s.changestore.GetBranch(projectOwner, projectId, branchId)
+				if err != nil {
+					return err
+				}
+
+				commitOpLocs, err := s.oplocstorecommit.ListOperationLocations(projectOwner, projectId, commitId, pathHash)
+				if err != nil {
+					return err
+				}
+				for _, loc := range commitOpLocs.GetOpLocs() {
+					if loc.GetChunkHash().GetHash() == in.GetOp().GetChunkHash().GetHash() {
+						commitOffset = loc.GetOffset()
+						commitLength = loc.GetLength()
+						break
+					}
+				}
+
+				if commitOffset == 0 && commitLength == 0 {
+					log.Panic("Operation of type block but hash could not be found in branch or commit")
+				}
 			}
 		}
+
 		operationLocation := &pb.BranchOperationLocations_OperationLocation{
-			Offset:       offset,
-			Length:       length,
-			DataLocation: dataLocation,
+			Offset:       branchOffset,
+			Length:       branchLength,
+			CommitOffset: commitOffset,
+			CommitLength: commitLength,
 			ChunkHash:    chunkHash,
 		}
 		pathHashToOpLocs[string(pathHash)] = append(pathHashToOpLocs[string(pathHash)], operationLocation)
@@ -204,7 +225,9 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 		}
 	}
 
-	return srv.SendAndClose(&pb.WriteOperationStreamResponse{})
+	return srv.SendAndClose(&pb.WriteOperationStreamResponse{
+		ChangeId: currentMaxChangeId + 1,
+	})
 }
 
 func (s JamsyncServer) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBranchChunkHashesRequest) (*pb.ReadBranchChunkHashesResponse, error) {
@@ -219,6 +242,7 @@ func (s JamsyncServer) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBra
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("here2")
 
 	targetChunker, err := fastcdc.NewChunker(targetBuffer, fastcdc.Options{
 		AverageSize: 1024 * 64,
@@ -259,14 +283,23 @@ func (s JamsyncServer) regenBranchFile(userId string, projectId, branchId, chang
 		return committedFileReader, nil
 	}
 
+	fmt.Println(operationLocations)
 	ops := make(chan *pb.Operation)
 	go func() {
 		for _, loc := range operationLocations.GetOpLocs() {
-			op, err := s.opdatastorebranch.Read(userId, projectId, branchId, pathHash, loc.GetOffset(), loc.GetLength())
-			if err != nil {
-				log.Panic(err)
+			if loc.GetCommitLength() != 0 {
+				op, err := s.opdatastorecommit.Read(userId, projectId, pathHash, loc.GetCommitOffset(), loc.GetCommitLength())
+				if err != nil {
+					log.Panic(err)
+				}
+				ops <- op
+			} else {
+				op, err := s.opdatastorebranch.Read(userId, projectId, branchId, pathHash, loc.GetOffset(), loc.GetLength())
+				if err != nil {
+					log.Panic(err)
+				}
+				ops <- op
 			}
-			ops <- op
 		}
 		close(ops)
 	}()
@@ -282,6 +315,7 @@ func (s JamsyncServer) regenBranchFile(userId string, projectId, branchId, chang
 	if err != nil {
 		log.Panic(err)
 	}
+	fmt.Println("done")
 
 	return bytes.NewReader(result.Bytes()), nil
 }
@@ -331,6 +365,7 @@ func (s JamsyncServer) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.Jamsy
 				dataCt++
 				bytes += len(op.Chunk.Data)
 			}
+			fmt.Println(op)
 			opsOut <- op
 			return nil
 		})

@@ -44,8 +44,8 @@ func Checkout() {
 		os.Exit(0)
 	}
 
-	if state.CommitId == 0 {
-		fmt.Println("Must be on mainline to checkout (for now).")
+	if state.CommitInfo == nil || state.BranchInfo != nil {
+		fmt.Println("Must be on mainline to checkout.")
 		os.Exit(1)
 	}
 
@@ -55,7 +55,7 @@ func Checkout() {
 	}
 
 	if branchId, ok := resp.GetBranches()[os.Args[2]]; ok {
-		if branchId == state.BranchId {
+		if branchId == state.BranchInfo.BranchId {
 			fmt.Println("Already on", os.Args[2])
 			return
 		}
@@ -67,13 +67,13 @@ func Checkout() {
 
 		// if branch already exists, do a pull
 		fileMetadata := readLocalFileList()
-		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchId, changeResp.ChangeId, fileMetadata)
+		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if diffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -88,8 +88,10 @@ func Checkout() {
 
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchId:  state.BranchId,
-			ChangeId:  changeResp.ChangeId,
+			BranchInfo: &statefile.BranchInfo{
+				BranchId: state.BranchInfo.BranchId,
+				ChangeId: changeResp.ChangeId,
+			},
 		}.Save()
 		if err != nil {
 			panic(err)
@@ -101,10 +103,12 @@ func Checkout() {
 			log.Panic(err)
 		}
 
+		fmt.Println(resp.BranchId)
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchId:  state.BranchId,
-			ChangeId:  0,
+			BranchInfo: &statefile.BranchInfo{
+				BranchId: resp.BranchId,
+			},
 		}.Save()
 		if err != nil {
 			panic(err)

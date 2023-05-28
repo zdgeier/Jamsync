@@ -110,7 +110,7 @@ func readLocalFileList() *pb.FileMetadata {
 	results := make(chan PathFile, numEntries)
 
 	i = 0
-	for w := 1; w < 4000 && w <= int(numEntries)/10+1; w++ {
+	for w := 1; w < 2048 && w <= int(numEntries)/10+1; w++ {
 		go worker(paths, results)
 	}
 
@@ -153,14 +153,14 @@ func readLocalFileList() *pb.FileMetadata {
 	}
 }
 
-func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, paths <-chan string, results chan<- error, numFiles int64) {
+func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
 	type pathResponse struct {
 		chunkHashResponse *pb.ReadBranchChunkHashesResponse
 		path              string
 	}
 	chunkHashResponses := make(chan pathResponse, numFiles)
 
-	numUpload := 500
+	numUpload := 64
 	numUploadFinished := make(chan bool)
 	for i := 0; i < numUpload; i++ {
 		go func() {
@@ -236,7 +236,7 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, proje
 		done <- true
 	}()
 
-	numHashDownload := 100
+	numHashDownload := 64
 	numHashDownloadFinished := make(chan bool)
 	for i := 0; i < numHashDownload; i++ {
 		go func() {
@@ -244,6 +244,7 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, proje
 				chunkHashResp, err := apiClient.ReadBranchChunkHashes(ctx, &pb.ReadBranchChunkHashesRequest{
 					ProjectId: projectId,
 					BranchId:  branchId,
+					ChangeId:  changeId,
 					PathHash:  pathToHash(path),
 					ModTime:   timestamppb.Now(),
 				})
@@ -263,7 +264,7 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, proje
 	<-done
 }
 
-func uploadFile(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, filePath string, sourceReader io.Reader) error {
+func uploadBranchFile(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, filePath string, sourceReader io.Reader) error {
 	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(context.TODO(), &pb.ReadBranchChunkHashesRequest{
 		ProjectId: projectId,
 		BranchId:  branchId,
@@ -333,7 +334,7 @@ func pathToHash(path string) []byte {
 	return h[:]
 }
 
-func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, prevChangeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) error {
+func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, prevChangeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) (uint64, error) {
 	ctx := context.Background()
 
 	var numFiles int64
@@ -346,7 +347,7 @@ func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, bra
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go uploadBranchFiles(ctx, apiClient, projectId, branchId, paths, results, numFiles)
+	go uploadBranchFiles(ctx, apiClient, projectId, branchId, prevChangeId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -366,18 +367,18 @@ func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, bra
 
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	err = uploadFile(apiClient, projectId, branchId, prevChangeId, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
+	err = uploadBranchFile(apiClient, projectId, branchId, prevChangeId, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return prevChangeId + 1, err
 }
 
 func downloadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
-	numUpload := 100
+	numUpload := 64
 	numUploadFinished := make(chan bool)
 	for i := 0; i < numUpload; i++ {
 		go func() {
@@ -690,7 +691,6 @@ func applyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, br
 				log.Panic(res)
 			}
 		}
-
 	}
 	return nil
 }

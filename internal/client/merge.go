@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/authfile"
@@ -32,8 +33,13 @@ func Merge() {
 	}
 	defer closer()
 
+	if state.CommitInfo != nil {
+		fmt.Println("Currently on a commit, checkout a branch with `jam checkout <branchname>` to push changes.")
+		os.Exit(1)
+	}
+
 	fileMetadata := readLocalFileList()
-	remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchId, state.ChangeId, fileMetadata)
+	remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -43,11 +49,26 @@ func Merge() {
 		return
 	}
 
-	_, err = apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
+	resp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
 		ProjectId: state.ProjectId,
-		BranchId:  state.BranchId,
+		BranchId:  state.BranchInfo.BranchId,
 	})
 	if err != nil {
 		log.Panic(err)
 	}
+
+	_, err = apiClient.DeleteBranch(context.Background(), &pb.DeleteBranchRequest{
+		ProjectId: state.ProjectId,
+		BranchId:  state.BranchInfo.BranchId,
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = statefile.StateFile{
+		ProjectId: state.ProjectId,
+		CommitInfo: &statefile.CommitInfo{
+			CommitId: resp.CommitId,
+		},
+	}.Save()
 }

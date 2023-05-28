@@ -78,9 +78,9 @@
                     let listItemEl = document.createElement("li");
                     let fileLink = document.createElement("a");
                     if (currentPath == "") {
-                        fileLink.href = `${projectUrl}/branchfiles/${currBranchName}/${file}`;
+                        fileLink.href = `${projectUrl}/branchfile/${currBranchName}/${file}`;
                     } else {
-                        fileLink.href = `${projectUrl}/branchfiles/${currBranchName}/${currentPath}/${file}`;
+                        fileLink.href = `${projectUrl}/branchfile/${currBranchName}/${currentPath}/${file}`;
                     }
                     fileLink.innerHTML = file; 
                     listItemEl.appendChild(fileLink);

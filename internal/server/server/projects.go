@@ -7,6 +7,22 @@ import (
 	"github.com/zdgeier/jamsync/internal/server/serverauth"
 )
 
+func (s JamsyncServer) GetProjectName(ctx context.Context, in *pb.GetProjectNameRequest) (*pb.GetProjectNameResponse, error) {
+	id, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projectName, err := s.db.GetProjectName(in.GetProjectId(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetProjectNameResponse{
+		ProjectName: projectName,
+	}, nil
+}
+
 func (s JamsyncServer) AddProject(ctx context.Context, in *pb.AddProjectRequest) (*pb.AddProjectResponse, error) {
 	id, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
