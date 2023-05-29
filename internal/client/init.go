@@ -29,7 +29,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Initializing a project at " + currentPath)
+	fmt.Println("Initializing a project at " + currentPath + ". Uploading files...")
 
 	branchResp, err := apiClient.CreateBranch(context.TODO(), &pb.CreateBranchRequest{ProjectId: resp.ProjectId, BranchName: "init"})
 	if err != nil {

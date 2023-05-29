@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/fastcdc"
 	"github.com/zdgeier/jamsync/internal/jamignore"
@@ -354,13 +355,21 @@ func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, bra
 	}
 	close(paths)
 
-	// fmt.Println("Syncing files")
-	// bar := progressbar.Default(numFiles)
-	for res := range results {
-		if res != nil {
-			log.Panic(res)
+	if numFiles > 1000 {
+		fmt.Println("Syncing files")
+		bar := progressbar.Default(numFiles)
+		for res := range results {
+			if res != nil {
+				log.Panic(res)
+			}
+			bar.Add(1)
 		}
-		//bar.Add(1)
+	} else {
+		for res := range results {
+			if res != nil {
+				log.Panic(res)
+			}
+		}
 	}
 
 	metadataBytes, err := proto.Marshal(fileMetadata)
@@ -621,22 +630,22 @@ func applyFileListDiffCommit(apiClient pb.JamsyncAPIClient, projectId, commitId 
 	}
 	close(paths)
 
-	// if os.Args[1] != "sync" {
-	// 	fmt.Println("Syncing files")
-	// 	bar := progressbar.Default(numFiles)
-	// 	for res := range results {
-	// 		if res != nil {
-	// 			fmt.Println(res) // Probably should handle this better
-	// 		}
-	// 		bar.Add(1)
-	// 	}
-	// } else {
-	for res := range results {
-		if res != nil {
-			fmt.Println(res) // Probably should handle this better
+	if numFiles > 1000 {
+		fmt.Println("Syncing files")
+		bar := progressbar.Default(numFiles)
+		for res := range results {
+			if res != nil {
+				fmt.Println(res) // Probably should handle this better
+			}
+			bar.Add(1)
+		}
+	} else {
+		for res := range results {
+			if res != nil {
+				fmt.Println(res) // Probably should handle this better
+			}
 		}
 	}
-	// }
 	return nil
 }
 
@@ -673,22 +682,22 @@ func applyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, br
 	}
 	close(paths)
 
-	// if os.Args[1] != "sync" {
-	// 	fmt.Println("Syncing files")
-	// 	bar := progressbar.Default(numFiles)
-	// 	for res := range results {
-	// 		if res != nil {
-	// 			fmt.Println(res) // Probably should handle this better
-	// 		}
-	// 		bar.Add(1)
-	// 	}
-	// } else {
-	for res := range results {
-		if res != nil {
-			fmt.Println(res) // Probably should handle this better
+	if numFiles > 1000 {
+		fmt.Println("Syncing files")
+		bar := progressbar.Default(numFiles)
+		for res := range results {
+			if res != nil {
+				fmt.Println(res) // Probably should handle this better
+			}
+			bar.Add(1)
+		}
+	} else {
+		for res := range results {
+			if res != nil {
+				fmt.Println(res) // Probably should handle this better
+			}
 		}
 	}
-	// }
 	return nil
 }
 

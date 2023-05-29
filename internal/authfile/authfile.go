@@ -26,15 +26,14 @@ func Authorize() (AuthFile, error) {
 		return AuthFile{}, err
 	}
 
-	var authFile AuthFile
 	if errors.Is(err, os.ErrNotExist) {
 		token, err := clientauth.AuthorizeUser()
 		if err != nil {
-			return authFile, err
+			log.Panic(err)
 		}
 
 		apiClient, closer, err := server.Connect(&oauth2.Token{
-			AccessToken: string(authFile.Token),
+			AccessToken: string(token),
 		})
 		if err != nil {
 			log.Panic(err)
@@ -43,50 +42,51 @@ func Authorize() (AuthFile, error) {
 
 		resp, err := apiClient.Ping(context.Background(), &pb.PingRequest{})
 		if err != nil {
-			return authFile, err
+			log.Panic(err)
 		}
 
-		authFile = AuthFile{
+		authFile := AuthFile{
 			Token:    token,
 			Username: resp.GetUsername(),
 		}
 
 		data, err := json.Marshal(authFile)
 		if err != nil {
-			return authFile, err
+			log.Panic(err)
 		}
 
 		err = os.WriteFile(authPath(), data, fs.ModePerm)
 		if err != nil {
-			return authFile, err
-		}
-	} else {
-		authFile := AuthFile{}
-		err = json.Unmarshal(rawFile, &authFile)
-		if err != nil {
-			return authFile, err
-		}
-
-		apiClient, closer, err := server.Connect(&oauth2.Token{
-			AccessToken: string(authFile.Token),
-		})
-		if err != nil {
 			log.Panic(err)
 		}
-		defer closer()
-
-		_, err = apiClient.Ping(context.Background(), &pb.PingRequest{})
-		if err != nil {
-			// If outdated token
-			err := os.Remove(authPath())
-			if err != nil {
-				return authFile, err
-			}
-			Authorize()
-		}
+		return authFile, nil
 	}
 
-	return authFile, err
+	authFile := AuthFile{}
+	err = json.Unmarshal(rawFile, &authFile)
+	if err != nil {
+		return authFile, err
+	}
+
+	apiClient, closer, err := server.Connect(&oauth2.Token{
+		AccessToken: string(authFile.Token),
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+	defer closer()
+
+	_, err = apiClient.Ping(context.Background(), &pb.PingRequest{})
+	if err != nil {
+		// If outdated token
+		err := os.Remove(authPath())
+		if err != nil {
+			return authFile, err
+		}
+		Authorize()
+	}
+
+	return authFile, nil
 }
 
 func Logout() error {

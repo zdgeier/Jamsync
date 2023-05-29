@@ -128,7 +128,6 @@ func (s *LocalOpLocStore) MaxChangeId(ownerId string, projectId, branchId uint64
 			maxChangeId = changeId
 		}
 	}
-	fmt.Println(maxChangeId)
 	return uint64(maxChangeId), nil
 }
 
@@ -139,7 +138,7 @@ func (s *LocalOpLocStore) DeleteProject(ownerId string, projectId uint64) error 
 func (s *LocalOpLocStore) DeleteBranch(ownerId string, projectId uint64, branchId uint64) error {
 	dirs, err := ioutil.ReadDir(fmt.Sprintf("jb/%s/%d/oplocstorebranch/%d", ownerId, projectId, branchId))
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	for _, dir := range dirs {

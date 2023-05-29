@@ -183,6 +183,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 				if err != nil {
 					return err
 				}
+				fmt.Println("HERE", commitOpLocs, projectOwner, projectId, commitId, pathHash)
 				for _, loc := range commitOpLocs.GetOpLocs() {
 					if loc.GetChunkHash().GetHash() == in.GetOp().GetChunkHash().GetHash() {
 						commitOffset = loc.GetOffset()
@@ -386,12 +387,12 @@ func (s JamsyncServer) DeleteBranch(ctx context.Context, in *pb.DeleteBranchRequ
 	}
 
 	err = s.opdatastorebranch.DeleteBranch(userId, in.GetProjectId(), in.GetBranchId())
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
 	err = s.oplocstorebranch.DeleteBranch(userId, in.GetProjectId(), in.GetBranchId())
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
