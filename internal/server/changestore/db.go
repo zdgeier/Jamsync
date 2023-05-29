@@ -23,7 +23,7 @@ func deleteBranch(db *sql.DB, branchId uint64) error {
 }
 
 func getBranchIdByName(db *sql.DB, branchName string) (uint64, error) {
-	row := db.QueryRow("SELECT rowid, FROM branches WHERE name = ?", branchName)
+	row := db.QueryRow("SELECT rowid FROM branches WHERE name = ?", branchName)
 	if row.Err() != nil {
 		return 0, row.Err()
 	}
@@ -65,7 +65,7 @@ func getBranchNameById(db *sql.DB, branchId uint64) (string, error) {
 }
 
 func addBranch(db *sql.DB, branchName string, baseCommitId uint64) (uint64, error) {
-	res, err := db.Exec("INSERT INTO branches(name, baseCommitId) VALUES(?, ?)", branchName, baseCommitId)
+	res, err := db.Exec("INSERT INTO branches(name, baseCommitId, deleted) VALUES(?, ?, 0)", branchName, baseCommitId)
 	if err != nil {
 		return 0, err
 	}
@@ -79,7 +79,7 @@ func addBranch(db *sql.DB, branchName string, baseCommitId uint64) (uint64, erro
 }
 
 func listBranches(db *sql.DB) (map[string]uint64, error) {
-	rows, err := db.Query("SELECT rowid, name FROM branches")
+	rows, err := db.Query("SELECT rowid, name FROM branches WHERE deleted = 0")
 	if err != nil {
 		return nil, err
 	}

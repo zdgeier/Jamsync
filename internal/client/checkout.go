@@ -45,7 +45,6 @@ func Checkout() {
 	}
 
 	if state.CommitInfo == nil || state.BranchInfo != nil {
-		fmt.Println(os.Args[2])
 		if os.Args[2] == "main" || os.Args[2] == "mainline" {
 			fileMetadata := readLocalFileList()
 			localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
