@@ -47,6 +47,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 		panic(err)
 	}
 
+	fmt.Println("Merging...")
 	mergeResp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
 		ProjectId: resp.ProjectId,
 		BranchId:  branchResp.BranchId,

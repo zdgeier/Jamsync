@@ -125,7 +125,11 @@
             selectEl.addEventListener("change", () => {
                 let projectName = splitPath[2];
                 let currBranchName = splitPath[4];
-                window.location.href = `${projectUrl}/branchfiles/${selectEl.value}/${currentPath}`;
+                if (selectEl.value === "main") {
+                    window.location.href = `${projectUrl}/committedfiles/${currentPath}`;
+                } else {
+                    window.location.href = `${projectUrl}/branchfiles/${selectEl.value}/${currentPath}`;
+                }
             });
         }
         branches()
