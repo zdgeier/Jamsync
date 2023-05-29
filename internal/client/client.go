@@ -157,7 +157,7 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, proje
 	}
 	chunkHashResponses := make(chan pathResponse, numFiles)
 
-	numUpload := 64
+	numUpload := 256
 	numUploadFinished := make(chan bool)
 	for i := 0; i < numUpload; i++ {
 		go func() {
