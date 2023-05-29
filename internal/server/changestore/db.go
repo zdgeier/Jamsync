@@ -7,7 +7,7 @@ import (
 
 func setup(db *sql.DB) error {
 	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS branches (name TEXT, changeId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+	CREATE TABLE IF NOT EXISTS branches (name TEXT, baseCommitId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
 	`
 	_, err := db.Exec(sqlStmt)
 	return err
@@ -22,38 +22,50 @@ func deleteBranch(db *sql.DB, branchId uint64) error {
 	return err
 }
 
-func getBranchByName(db *sql.DB, branchName string) (uint64, uint64, error) {
-	row := db.QueryRow("SELECT rowid, changeId FROM branches WHERE name = ?", branchName)
+func getBranchIdByName(db *sql.DB, branchName string) (uint64, error) {
+	row := db.QueryRow("SELECT rowid, FROM branches WHERE name = ?", branchName)
 	if row.Err() != nil {
-		return 0, 0, row.Err()
+		return 0, row.Err()
 	}
 
-	var changeId uint64
 	var branchId uint64
-	err := row.Scan(&branchId, &changeId)
+	err := row.Scan(&branchId)
 	if errors.Is(sql.ErrNoRows, err) {
-		return 0, 0, nil
+		return 0, nil
 	}
-	return branchId, changeId, err
+	return branchId, err
 }
 
-func getBranch(db *sql.DB, branchId uint64) (string, uint64, error) {
-	row := db.QueryRow("SELECT name, changeId FROM branches WHERE rowid = ?", branchId)
+func getBranchBaseCommitId(db *sql.DB, branchId uint64) (uint64, error) {
+	row := db.QueryRow("SELECT baseCommitId FROM branches WHERE rowid = ?", branchId)
 	if row.Err() != nil {
-		return "", 0, row.Err()
+		return 0, row.Err()
 	}
 
-	var changeId uint64
-	var name string
-	err := row.Scan(&name, &changeId)
+	var commitId uint64
+	err := row.Scan(&commitId)
 	if errors.Is(sql.ErrNoRows, err) {
-		return "", 0, nil
+		return 0, nil
 	}
-	return name, changeId, err
+	return commitId, err
 }
 
-func addBranch(db *sql.DB, branchName string, changeId uint64) (uint64, error) {
-	res, err := db.Exec("INSERT INTO branches(name, changeId) VALUES(?, ?)", branchName, changeId)
+func getBranchNameById(db *sql.DB, branchId uint64) (string, error) {
+	row := db.QueryRow("SELECT name FROM branches WHERE rowid = ?", branchId)
+	if row.Err() != nil {
+		return "", row.Err()
+	}
+
+	var name string
+	err := row.Scan(&name)
+	if errors.Is(sql.ErrNoRows, err) {
+		return "", nil
+	}
+	return name, err
+}
+
+func addBranch(db *sql.DB, branchName string, baseCommitId uint64) (uint64, error) {
+	res, err := db.Exec("INSERT INTO branches(name, baseCommitId) VALUES(?, ?)", branchName, baseCommitId)
 	if err != nil {
 		return 0, err
 	}

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/schollz/progressbar/v3"
 	"github.com/zdgeier/jamsync/gen/pb"
 	"github.com/zdgeier/jamsync/internal/fastcdc"
 	"github.com/zdgeier/jamsync/internal/jamignore"
@@ -81,9 +80,6 @@ func worker(pathInfos <-chan PathInfo, results chan<- PathFile) {
 }
 
 func readLocalFileList() *pb.FileMetadata {
-	if os.Args[1] != "sync" {
-		fmt.Println("Hashing files")
-	}
 	var ignorer = &jamignore.JamsyncIgnorer{}
 	err := ignorer.ImportPatterns(".gitignore")
 	if err != nil {
@@ -130,23 +126,23 @@ func readLocalFileList() *pb.FileMetadata {
 	}()
 
 	files := make(map[string]*pb.File, numEntries)
-	if os.Args[1] != "sync" {
-		bar := progressbar.Default(numEntries)
-		for i := int64(0); i < numEntries; i++ {
-			pathFile := <-results
-			if pathFile.path != "" {
-				files[pathFile.path] = pathFile.file
-			}
-			bar.Add(1)
-		}
-	} else {
-		for i := int64(0); i < numEntries; i++ {
-			pathFile := <-results
-			if pathFile.path != "" {
-				files[pathFile.path] = pathFile.file
-			}
+	// if os.Args[1] != "sync" {
+	// 	bar := progressbar.Default(numEntries)
+	// 	for i := int64(0); i < numEntries; i++ {
+	// 		pathFile := <-results
+	// 		if pathFile.path != "" {
+	// 			files[pathFile.path] = pathFile.file
+	// 		}
+	// 		bar.Add(1)
+	// 	}
+	// } else {
+	for i := int64(0); i < numEntries; i++ {
+		pathFile := <-results
+		if pathFile.path != "" {
+			files[pathFile.path] = pathFile.file
 		}
 	}
+	// }
 
 	return &pb.FileMetadata{
 		Files: files,
@@ -205,9 +201,10 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, proje
 				}()
 				sent := 0
 				for op := range opsOut {
-					err = writeStream.Send(&pb.ProjectOperation{
+					err = writeStream.Send(&pb.BranchFileOperation{
 						ProjectId: projectId,
 						BranchId:  branchId,
+						ChangeId:  changeId,
 						PathHash:  pathToHash(resp.path),
 						Op:        op,
 					})
@@ -268,7 +265,7 @@ func uploadBranchFile(apiClient pb.JamsyncAPIClient, projectId uint64, branchId 
 	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(context.TODO(), &pb.ReadBranchChunkHashesRequest{
 		ProjectId: projectId,
 		BranchId:  branchId,
-		ChangeId:  changeId,
+		ChangeId:  changeId - 1,
 		PathHash:  pathToHash(filePath),
 		ModTime:   timestamppb.Now(),
 	})
@@ -314,9 +311,10 @@ func uploadBranchFile(apiClient pb.JamsyncAPIClient, projectId uint64, branchId 
 		return err
 	}
 	for op := range opsOut {
-		err = writeStream.Send(&pb.ProjectOperation{
+		err = writeStream.Send(&pb.BranchFileOperation{
 			ProjectId: projectId,
 			BranchId:  branchId,
+			ChangeId:  changeId,
 			PathHash:  pathToHash(filePath),
 			Op:        op,
 		})
@@ -334,7 +332,7 @@ func pathToHash(path string) []byte {
 	return h[:]
 }
 
-func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, prevChangeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) (uint64, error) {
+func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 
 	var numFiles int64
@@ -347,7 +345,7 @@ func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, bra
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go uploadBranchFiles(ctx, apiClient, projectId, branchId, prevChangeId, paths, results, numFiles)
+	go uploadBranchFiles(ctx, apiClient, projectId, branchId, changeId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -356,25 +354,25 @@ func pushFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, bra
 	}
 	close(paths)
 
-	fmt.Println("Syncing files")
-	bar := progressbar.Default(numFiles)
+	// fmt.Println("Syncing files")
+	// bar := progressbar.Default(numFiles)
 	for res := range results {
 		if res != nil {
 			log.Panic(res)
 		}
-		bar.Add(1)
+		//bar.Add(1)
 	}
 
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	err = uploadBranchFile(apiClient, projectId, branchId, prevChangeId, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
+	err = uploadBranchFile(apiClient, projectId, branchId, changeId, ".jamsyncfilelist", bytes.NewReader(metadataBytes))
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return prevChangeId + 1, err
+	return err
 }
 
 func downloadBranchFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
@@ -623,23 +621,22 @@ func applyFileListDiffCommit(apiClient pb.JamsyncAPIClient, projectId, commitId 
 	}
 	close(paths)
 
-	if os.Args[1] != "sync" {
-		fmt.Println("Syncing files")
-		bar := progressbar.Default(numFiles)
-		for res := range results {
-			if res != nil {
-				fmt.Println(res) // Probably should handle this better
-			}
-			bar.Add(1)
+	// if os.Args[1] != "sync" {
+	// 	fmt.Println("Syncing files")
+	// 	bar := progressbar.Default(numFiles)
+	// 	for res := range results {
+	// 		if res != nil {
+	// 			fmt.Println(res) // Probably should handle this better
+	// 		}
+	// 		bar.Add(1)
+	// 	}
+	// } else {
+	for res := range results {
+		if res != nil {
+			fmt.Println(res) // Probably should handle this better
 		}
-	} else {
-		for res := range results {
-			if res != nil {
-				log.Panic(res)
-			}
-		}
-
 	}
+	// }
 	return nil
 }
 
@@ -676,22 +673,22 @@ func applyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, br
 	}
 	close(paths)
 
-	if os.Args[1] != "sync" {
-		fmt.Println("Syncing files")
-		bar := progressbar.Default(numFiles)
-		for res := range results {
-			if res != nil {
-				fmt.Println(res) // Probably should handle this better
-			}
-			bar.Add(1)
-		}
-	} else {
-		for res := range results {
-			if res != nil {
-				log.Panic(res)
-			}
+	// if os.Args[1] != "sync" {
+	// 	fmt.Println("Syncing files")
+	// 	bar := progressbar.Default(numFiles)
+	// 	for res := range results {
+	// 		if res != nil {
+	// 			fmt.Println(res) // Probably should handle this better
+	// 		}
+	// 		bar.Add(1)
+	// 	}
+	// } else {
+	for res := range results {
+		if res != nil {
+			fmt.Println(res) // Probably should handle this better
 		}
 	}
+	// }
 	return nil
 }
 

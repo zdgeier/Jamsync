@@ -40,20 +40,30 @@ func (s LocalChangeStore) getLocalProjectDB(ownerId string, projectId uint64) (*
 	return localDB, nil
 }
 
-func (s LocalChangeStore) GetBranch(ownerId string, projectId uint64, branchId uint64) (string, uint64, error) {
+func (s LocalChangeStore) GetBranchNameById(ownerId string, projectId uint64, branchId uint64) (string, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
-	return getBranch(db, branchId)
+	return getBranchNameById(db, branchId)
 }
-func (s LocalChangeStore) GetBranchByName(ownerId string, projectId uint64, branchName string) (uint64, uint64, error) {
+
+func (s LocalChangeStore) GetBranchIdByName(ownerId string, projectId uint64, branchName string) (uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
-	return getBranchByName(db, branchName)
+	return getBranchIdByName(db, branchName)
 }
+
+func (s LocalChangeStore) GetBranchBaseCommitId(ownerId string, projectId uint64, branchId uint64) (uint64, error) {
+	db, err := s.getLocalProjectDB(ownerId, projectId)
+	if err != nil {
+		return 0, err
+	}
+	return getBranchBaseCommitId(db, branchId)
+}
+
 func (s LocalChangeStore) DeleteBranch(ownerId string, projectId uint64, branchId uint64) error {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
@@ -61,6 +71,7 @@ func (s LocalChangeStore) DeleteBranch(ownerId string, projectId uint64, branchI
 	}
 	return deleteBranch(db, branchId)
 }
+
 func (s LocalChangeStore) AddBranch(ownerId string, projectId uint64, branchName string, commitId uint64) (uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
@@ -68,6 +79,7 @@ func (s LocalChangeStore) AddBranch(ownerId string, projectId uint64, branchName
 	}
 	return addBranch(db, branchName, commitId)
 }
+
 func (s LocalChangeStore) ListBranches(ownerId string, projectId uint64) (map[string]uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
@@ -76,6 +88,7 @@ func (s LocalChangeStore) ListBranches(ownerId string, projectId uint64) (map[st
 
 	return listBranches(db)
 }
+
 func (s LocalChangeStore) DeleteProject(projectId uint64, ownerId string) error {
 	return os.RemoveAll(fmt.Sprintf("jb/%s/%d", ownerId, projectId))
 }

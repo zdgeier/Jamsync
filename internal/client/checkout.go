@@ -45,7 +45,53 @@ func Checkout() {
 	}
 
 	if state.CommitInfo == nil || state.BranchInfo != nil {
-		fmt.Println("Must be on mainline to checkout.")
+		fmt.Println(os.Args[2])
+		if os.Args[2] == "main" || os.Args[2] == "mainline" {
+			fileMetadata := readLocalFileList()
+			localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			if err != nil {
+				log.Panic(err)
+			}
+			if diffHasChanges(localToRemoteDiff) {
+				fmt.Println("Some changes locally have not been pushed. Run `jam push` to push your local changes.")
+				os.Exit(1)
+			}
+
+			commitResp, err := apiClient.GetProjectCurrentCommit(context.Background(), &pb.GetProjectCurrentCommitRequest{
+				ProjectId: state.ProjectId,
+			})
+			if err != nil {
+				log.Panic(err)
+			}
+
+			diffRemoteToLocalResp, err := diffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
+			if err != nil {
+				log.Panic(err)
+			}
+
+			err = applyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			err = statefile.StateFile{
+				ProjectId: state.ProjectId,
+				CommitInfo: &statefile.CommitInfo{
+					CommitId: commitResp.CommitId,
+				},
+			}.Save()
+			if err != nil {
+				panic(err)
+			}
+			return
+		} else {
+			fmt.Println("Must be on mainline to checkout.")
+			os.Exit(1)
+		}
+	}
+
+	if os.Args[2] == "main" || os.Args[2] == "mainline" {
+		fmt.Println("`main` and `mainline` are branch names reserved for commits. Please choose another branch name.")
 		os.Exit(1)
 	}
 
@@ -103,7 +149,6 @@ func Checkout() {
 			log.Panic(err)
 		}
 
-		fmt.Println(resp.BranchId)
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
 			BranchInfo: &statefile.BranchInfo{
@@ -113,6 +158,6 @@ func Checkout() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Switched to new branch", os.Args[2], "with id", resp.GetBranchId())
+		fmt.Println("Switched to new branch", os.Args[2]+".")
 	}
 }

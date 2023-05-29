@@ -71,4 +71,7 @@ func Merge() {
 			CommitId: resp.CommitId,
 		},
 	}.Save()
+	if err != nil {
+		log.Panic(err)
+	}
 }

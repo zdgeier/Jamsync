@@ -43,9 +43,9 @@ func Push() {
 		log.Panic(err)
 	}
 
-	changeId := stateFile.BranchInfo.ChangeId
+	changeId := stateFile.BranchInfo.ChangeId + 1
 	if diffHasChanges(localToRemoteDiff) {
-		changeId, err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId, fileMetadata, localToRemoteDiff)
+		err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId+1, fileMetadata, localToRemoteDiff)
 		if err != nil {
 			log.Panic(err)
 		}

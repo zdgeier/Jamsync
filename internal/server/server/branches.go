@@ -37,13 +37,29 @@ func (s JamsyncServer) CreateBranch(ctx context.Context, in *pb.CreateBranchRequ
 	}, nil
 }
 
+func (s JamsyncServer) GetBranchName(ctx context.Context, in *pb.GetBranchNameRequest) (*pb.GetBranchNameResponse, error) {
+	userId, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	branchName, err := s.changestore.GetBranchNameById(userId, in.GetProjectId(), in.GetBranchId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetBranchNameResponse{
+		BranchName: branchName,
+	}, nil
+}
+
 func (s JamsyncServer) GetBranchId(ctx context.Context, in *pb.GetBranchIdRequest) (*pb.GetBranchIdResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	branchId, _, err := s.changestore.GetBranchByName(userId, in.GetProjectId(), in.GetBranchName())
+	branchId, err := s.changestore.GetBranchIdByName(userId, in.GetProjectId(), in.GetBranchName())
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +75,7 @@ func (s JamsyncServer) GetBranchCurrentChange(ctx context.Context, in *pb.GetBra
 		return nil, err
 	}
 
-	_, changeId, err := s.changestore.GetBranch(userId, in.GetProjectId(), in.GetBranchId())
+	changeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
 	if err != nil {
 		return nil, err
 	}
@@ -85,23 +101,6 @@ func (s JamsyncServer) ListBranches(ctx context.Context, in *pb.ListBranchesRequ
 	}, nil
 }
 
-func (s JamsyncServer) GetBranch(ctx context.Context, in *pb.GetBranchRequest) (*pb.GetBranchResponse, error) {
-	userId, err := serverauth.ParseIdFromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	branchId, changeId, err := s.changestore.GetBranchByName(userId, in.GetProjectId(), in.GetBranchName())
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.GetBranchResponse{
-		BranchId: branchId,
-		ChangeId: changeId,
-	}, nil
-}
-
 func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranchOperationsStreamServer) error {
 	userId, err := serverauth.ParseIdFromCtx(srv.Context())
 	if err != nil {
@@ -109,7 +108,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 	}
 
 	var projectOwner string
-	var projectId, branchId, currentMaxChangeId, operationProject uint64
+	var projectId, branchId, changeId, operationProject uint64
 	pathHashToOpLocs := make(map[string][]*pb.BranchOperationLocations_OperationLocation, 0)
 	for {
 		in, err := srv.Recv()
@@ -122,6 +121,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 
 		projectId = in.GetProjectId()
 		branchId = in.GetBranchId()
+		changeId = in.GetChangeId()
 		if operationProject == 0 {
 			owner, err := s.db.GetProjectOwner(projectId)
 			if err != nil {
@@ -132,10 +132,6 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 			}
 			projectOwner = owner
 			operationProject = projectId
-			currentMaxChangeId, err = s.oplocstorebranch.MaxChangeId(projectOwner, projectId, branchId)
-			if err != nil {
-				return err
-			}
 		}
 
 		if operationProject != projectId {
@@ -165,7 +161,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 		}
 
 		if in.GetOp().GetType() == pb.Operation_OpBlock {
-			opLocs, err := s.oplocstorebranch.ListOperationLocations(projectOwner, projectId, branchId, currentMaxChangeId, pathHash)
+			opLocs, err := s.oplocstorebranch.ListOperationLocations(projectOwner, projectId, branchId, changeId-1, pathHash)
 			if err != nil {
 				return err
 			}
@@ -178,7 +174,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 			}
 
 			if branchOffset == 0 && branchLength == 0 {
-				_, commitId, err := s.changestore.GetBranch(projectOwner, projectId, branchId)
+				commitId, err := s.changestore.GetBranchBaseCommitId(projectOwner, projectId, branchId)
 				if err != nil {
 					return err
 				}
@@ -196,6 +192,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 				}
 
 				if commitOffset == 0 && commitLength == 0 {
+					fmt.Println(projectOwner, projectId, commitId, pathHash, commitOffset, commitLength, commitOpLocs)
 					log.Panic("Operation of type block but hash could not be found in branch or commit")
 				}
 			}
@@ -216,7 +213,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 			ProjectId: projectId,
 			OwnerId:   projectOwner,
 			BranchId:  branchId,
-			ChangeId:  currentMaxChangeId + 1,
+			ChangeId:  changeId,
 			PathHash:  []byte(pathHash),
 			OpLocs:    opLocs,
 		})
@@ -225,9 +222,7 @@ func (s JamsyncServer) WriteBranchOperationsStream(srv pb.JamsyncAPI_WriteBranch
 		}
 	}
 
-	return srv.SendAndClose(&pb.WriteOperationStreamResponse{
-		ChangeId: currentMaxChangeId + 1,
-	})
+	return srv.SendAndClose(&pb.WriteOperationStreamResponse{})
 }
 
 func (s JamsyncServer) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBranchChunkHashesRequest) (*pb.ReadBranchChunkHashesResponse, error) {
@@ -242,7 +237,6 @@ func (s JamsyncServer) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBra
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("here2")
 
 	targetChunker, err := fastcdc.NewChunker(targetBuffer, fastcdc.Options{
 		AverageSize: 1024 * 64,
@@ -262,7 +256,7 @@ func (s JamsyncServer) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBra
 }
 
 func (s JamsyncServer) regenBranchFile(userId string, projectId, branchId, changeId uint64, pathHash []byte) (*bytes.Reader, error) {
-	_, commitId, err := s.changestore.GetBranch(userId, projectId, branchId)
+	commitId, err := s.changestore.GetBranchBaseCommitId(userId, projectId, branchId)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +277,6 @@ func (s JamsyncServer) regenBranchFile(userId string, projectId, branchId, chang
 		return committedFileReader, nil
 	}
 
-	fmt.Println(operationLocations)
 	ops := make(chan *pb.Operation)
 	go func() {
 		for _, loc := range operationLocations.GetOpLocs() {
@@ -315,7 +308,6 @@ func (s JamsyncServer) regenBranchFile(userId string, projectId, branchId, chang
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Println("done")
 
 	return bytes.NewReader(result.Bytes()), nil
 }
@@ -365,7 +357,6 @@ func (s JamsyncServer) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.Jamsy
 				dataCt++
 				bytes += len(op.Chunk.Data)
 			}
-			fmt.Println(op)
 			opsOut <- op
 			return nil
 		})
@@ -375,7 +366,8 @@ func (s JamsyncServer) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.Jamsy
 	}()
 
 	for op := range opsOut {
-		err = srv.Send(&pb.ProjectOperation{
+		err = srv.Send(&pb.BranchFileOperation{
+			BranchId:  in.BranchId,
 			ProjectId: in.GetProjectId(),
 			PathHash:  in.GetPathHash(),
 			Op:        op,

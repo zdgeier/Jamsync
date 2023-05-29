@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,12 +18,10 @@ func (s JamsyncServer) GetProjectCurrentCommit(ctx context.Context, in *pb.GetPr
 		return nil, err
 	}
 
-	fmt.Println("ID", in.ProjectId)
 	commitId, err := s.oplocstorecommit.MaxCommitId(userId, in.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(commitId)
 
 	return &pb.GetProjectCurrentCommitResponse{
 		CommitId: commitId,
@@ -157,7 +154,7 @@ func (s JamsyncServer) ReadCommittedFile(in *pb.ReadCommittedFileRequest, srv pb
 	}()
 
 	for op := range opsOut {
-		err = srv.Send(&pb.ProjectOperation{
+		err = srv.Send(&pb.CommittedFileOperation{
 			ProjectId: in.GetProjectId(),
 			PathHash:  in.GetPathHash(),
 			Op:        op,
@@ -367,7 +364,7 @@ func (s JamsyncServer) MergeBranch(ctx context.Context, in *pb.MergeBranchReques
 
 	if isFirstCommit {
 		return &pb.MergeBranchResponse{
-			CommitId: prevCommitId,
+			CommitId: 0,
 		}, nil
 	} else {
 		return &pb.MergeBranchResponse{

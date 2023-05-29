@@ -42,12 +42,11 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 		panic(err)
 	}
 
-	_, err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
+	err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Merging...")
 	mergeResp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
 		ProjectId: resp.ProjectId,
 		BranchId:  branchResp.BranchId,
@@ -73,6 +72,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Done! Run `jam checkout <branch name>` to start making changes.")
 }
 
 func initExistingProject(apiClient pb.JamsyncAPIClient) {

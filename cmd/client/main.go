@@ -27,6 +27,8 @@ func main() {
 		client.Open()
 	case os.Args[1] == "pull":
 		client.Pull()
+	case os.Args[1] == "status":
+		client.Status()
 	case os.Args[1] == "push":
 		client.Push()
 	case os.Args[1] == "merge":

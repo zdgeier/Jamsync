@@ -24,7 +24,6 @@ type StateFile struct {
 }
 
 func (s StateFile) Save() error {
-	fmt.Println("writing", s)
 	f, err := os.Create(".jamsync")
 	if err != nil {
 		return err

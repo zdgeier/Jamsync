@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -57,8 +56,6 @@ func GetProjectCurrentCommitHandler() gin.HandlerFunc {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-
-		fmt.Println("GOT", resp.CommitId)
 
 		ctx.JSON(200, resp)
 	}

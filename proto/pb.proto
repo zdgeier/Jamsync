@@ -20,22 +20,32 @@ service JamsyncAPI {
     rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
     rpc GetBranchCurrentChange(GetBranchCurrentChangeRequest) returns (GetBranchCurrentChangeResponse);
     rpc GetBranchId(GetBranchIdRequest) returns (GetBranchIdResponse);
+    rpc GetBranchName(GetBranchNameRequest) returns (GetBranchNameResponse);
 
     // File operations
     rpc ReadCommitChunkHashes(ReadCommitChunkHashesRequest) returns (ReadCommitChunkHashesResponse);
-    rpc ReadCommittedFile(ReadCommittedFileRequest) returns (stream ProjectOperation);
+    rpc ReadCommittedFile(ReadCommittedFileRequest) returns (stream CommittedFileOperation);
     rpc ListCommitOperationLocations(ListCommitOperationLocationsRequest) returns (CommitOperationLocations);
     rpc MergeBranch(MergeBranchRequest) returns (MergeBranchResponse);
 
     rpc ReadBranchChunkHashes(ReadBranchChunkHashesRequest) returns (ReadBranchChunkHashesResponse);
-    rpc ReadBranchFile(ReadBranchFileRequest) returns (stream ProjectOperation);
+    rpc ReadBranchFile(ReadBranchFileRequest) returns (stream BranchFileOperation);
     rpc ListBranchOperationLocations(ListBranchOperationLocationsRequest) returns (BranchOperationLocations);
-    rpc WriteBranchOperationsStream(stream ProjectOperation) returns (WriteOperationStreamResponse);
+    rpc WriteBranchOperationsStream(stream BranchFileOperation) returns (WriteOperationStreamResponse);
 
     // User operations
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message GetBranchNameRequest {
+    uint64 project_id = 1;
+    uint64 branch_id = 2;
+}
+
+message GetBranchNameResponse {
+    string branch_name = 1;
 }
 
 message GetBranchIdRequest {
@@ -87,7 +97,6 @@ message EditorStreamMessage{
 }
 
 message WriteOperationStreamResponse {
-    uint64 change_id = 1;
 }
 
 message FileMetadataDiff {
@@ -157,11 +166,18 @@ message ListBranchesResponse {
     map<string, uint64> branches = 1;
 }
 
-message ProjectOperation {
+message BranchFileOperation {
     uint64 project_id = 1;
-    bytes path_hash = 3;
-    Operation op = 4;
-    uint64 branch_id = 5;
+    uint64 branch_id = 2;
+    uint64 change_id = 3;
+    bytes path_hash = 4;
+    Operation op = 5;
+}
+
+message CommittedFileOperation {
+    uint64 project_id = 1;
+    bytes path_hash = 2;
+    Operation op = 3;
 }
 
 message Operation {

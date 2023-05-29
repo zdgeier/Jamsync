@@ -128,6 +128,7 @@ func (s *LocalOpLocStore) MaxChangeId(ownerId string, projectId, branchId uint64
 			maxChangeId = changeId
 		}
 	}
+	fmt.Println(maxChangeId)
 	return uint64(maxChangeId), nil
 }
 
