@@ -1,0 +1,476 @@
+
+@font-face {
+    font-family: 'Fira Code';
+    font-display: fallback;
+    src: url("/public/font/FiraCode-VF.woff2") format("woff2-variations");
+    font-weight: 300 700;
+    font-style: normal;
+}
+
+:root {
+    --bright-pink: #ff007f;
+    --pink: #D24079;
+    --purple: rebeccapurple;
+    --tan: #ffb300;
+    --bright-blue: #00e5ff;
+    --dark-blue: #1b1a20;
+    background-color: var(--dark-blue);
+    color: white;
+    margin: 0;
+    padding: 0;
+    font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace;
+    font-size: 1rem;
+    line-height: 1.54;
+    text-underline-offset: 4px;
+    letter-spacing: -0.02em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "liga", "tnum", "zero", "ss01", "locl";
+    font-variant-ligatures: contextual;
+    -webkit-overflow-scrolling: touch;
+    -webkit-text-size-adjust: 100%;
+    box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+::selection {
+    background: var(--bright-pink);
+    /* WebKit/Blink Browsers */
+}
+
+::-moz-selection {
+    background: var(--bright-pink);
+    /* Gecko Browsers */
+}
+
+h1 {
+    font-size: 2em;
+    font-weight: 700;
+}
+
+ul,
+ol {
+    list-style: none;
+    padding-left: 0;
+}
+
+li {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+li p {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+a {
+    color: var(--bright-pink);
+}
+
+a:hover {
+    color: white;
+}
+
+button,
+input,
+select {
+    font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace;
+}
+
+footer {
+    color: white;
+    opacity: 0.5;
+    padding: 32px;
+    display: flex;
+    align-items: end;
+    height: 100%;
+    width: 100%;
+}
+
+footer a {
+    color: white;
+}
+
+.Header-top {
+    padding: 32px 32px 0 32px;
+    display: flex;
+    font-size: 1.2rem;
+}
+
+.Header-top a {
+    --primary: var(--dark-blue);
+    --secondary: var(--bright-pink);
+    text-decoration: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3px 8px;
+}
+
+.Header-top a:hover {
+    --primary: var(--bright-pink);
+    --secondary: var(--dark-blue);
+}
+
+a.Header-homeLink {
+    color: var(--primary);
+    background-color: var(--secondary);
+    border: 2px solid var(--bright-pink);
+    margin-right: 10px;
+}
+
+.Header-topLeft {
+    width: 100%;
+    display: flex;
+}
+
+.Header-topLeft::after {
+    content: '';
+    background: repeating-linear-gradient(90deg, var(--bright-pink), var(--bright-pink), 2px, transparent 0, transparent 10px);
+    display: block;
+    width: 100%;
+    right: 10px;
+}
+
+a.Header-login {
+    color: var(--secondary);
+    border: 2px solid var(--bright-pink);
+    background-color: var(--primary);
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.Header-bottom {
+    padding: 16px 32px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.Header-bottom a {
+    color: white;
+}
+
+.Header-bottom a:hover {
+    color: var(--bright-pink);
+}
+
+.Header-bottomLeft {
+    display: flex;
+}
+
+.Header-bottomLink {
+    display: block;
+    padding: 16px 10px;
+}
+
+.About-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 48px;
+    font-weight: 800;
+}
+
+.About-headerLeft {
+    padding-right: 16px;
+}
+
+.About-list {
+    list-style: decimal;
+    padding-left: 48px;
+}
+
+
+.is-hidden {
+    display: none;
+}
+
+code {
+    font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace;
+}
+
+.Files a {
+    color: white;
+    text-decoration: none;
+}
+
+.Files a:hover {
+    text-decoration: underline;
+}
+
+.Files-table--dragging {
+    opacity: 0.2;
+}
+
+.Files-directory a {
+    color: var(--bright-pink);
+}
+
+.File-wrapper {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 32px;
+    overflow: scroll;
+}
+
+.File-wrapper:focus-within {
+    border: 1px solid white;
+}
+
+.File-wrapper.Files-wrapper--editing {
+    border-color: rgba(255, 0, 127, 0.5);
+}
+
+.Files-wrapper--editing:focus-within {
+    border-color: var(--bright-pink);
+}
+
+.FilesHeader {
+    font-size: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.FilesHeader-branchSelect {
+    padding: 8px;
+    margin: 8px;
+    color: var(--secondary);
+    border: none;
+    background-color: var(--primary);
+    align-items: center;
+}
+
+.Projects-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.Projects-create {
+    display: inline-grid;
+    vertical-align: top;
+    align-items: center;
+    position: relative;
+    border: none;
+}
+
+.Projects-create::after,
+.Projects-createInput {
+    color: var(--bright-pink);
+    background-color: var(--dark-blue);
+    width: auto;
+    text-align: center;
+    min-width: 1em;
+    grid-area: 1 / 3;
+    font: inherit;
+    margin: 0;
+    resize: none;
+    background: none;
+    appearance: none;
+    border: none;
+}
+
+.Projects-create::after {
+    content: attr(data-value) ' ';
+    visibility: hidden;
+    white-space: pre-wrap;
+}
+
+.Projects-createText {
+    color: var(--bright-pink);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Projects-createForm {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--bright-pink);
+    background-color: var(--dark-blue);
+}
+
+.Benchmark {
+    margin-top: 16px;
+}
+
+.Benchmark-table {
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+.Benchmark-tableData,
+.Benchmark-tableHeader {
+    text-align: center;
+    width: 125px;
+}
+
+.Benchmark-tableDataFirst {
+    text-align: left;
+}
+
+#projectname {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    overflow-wrap: break-word;
+}
+
+.slidecontainer {
+    width: 100%;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    background: grey;
+    opacity: 0.5;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 0;
+    background: var(--bright-pink);
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    background: var(--pink);
+    cursor: pointer;
+}
+
+.slider-steps {
+    background-color: pink;
+    color: pink;
+}
+
+.Location {
+    font-size: 20px;
+}
+
+code {
+    outline: none;
+}
+
+.Error {
+    color: red;
+}
+
+.Hero-content {
+    font-size: 24px;
+}
+
+.About-video {
+    border: 10px solid var(--bright-pink);
+    padding: 32px;
+}
+
+.About-videoLarge {
+    border: 10px solid var(--bright-pink);
+    padding: 32px;
+}
+
+@media only screen and (max-width: 1024px) {
+    .About-video {
+        border: 5px solid var(--bright-pink);
+        padding: 4px;
+    }
+
+    .About-videoLarge {
+        border: 5px solid var(--bright-pink);
+        padding: 4px;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .About-videoLarge {
+        height: 180px;
+    }
+
+    .About-video {
+        display: none;
+    }
+
+    .Core-video {
+        height: 168px;
+        width: 300px;
+    }
+}
+
+.cm-editor.cm-focused {
+    outline: 2px solid var(--bright-pink)
+}
+
+.cm-editor .cm-content {
+    font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace;
+}
+
+::-webkit-scrollbar {
+    height: 12px;
+    width: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+    padding: 4px;
+    background-color: var(--bright-pink);
+}
+
+html {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+main {
+    height: 100%;
+}
+
+.OpenDirectory {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.OpenDirectory-button {
+    --primary: var(--dark-blue);
+    --secondary: var(--bright-pink);
+    padding: 10px;
+    font-size: 1.25em;
+    font-weight: 700;
+    color: var(--primary);
+    background-color: var(--secondary);
+    border: 2px solid var(--bright-pink);
+}
+
+.OpenDirectory-button:hover {
+    --primary: var(--bright-pink);
+    --secondary: var(--dark-blue);
+}
+
+
