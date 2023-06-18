@@ -25,6 +25,9 @@ buildeditor:
 movewebassets:
 	cp -R cmd/web/public jamsync-build/; cp -R cmd/web/template jamsync-build/;
 
+buildui:
+	./scripts/buildui.sh
+
 # Needed to be done locally since Mac requires signing binaries. Make sure you have signing env variables setup to do this.
 buildclients:
 	./scripts/buildclients.sh
@@ -50,7 +53,7 @@ cleanbuild:
 deploy:
 	./scripts/deploy.sh
 
-build: clean zipself protos buildeditor movewebassets buildclients zipbuild uploadbuild deploy cleanbuild installclientremote
+build: clean zipself protos buildeditor movewebassets buildclients buildui zipbuild uploadbuild deploy cleanbuild installclientremote
 
 # Misc ================================
 
