@@ -61,13 +61,13 @@ func Status() {
 		}
 
 		if changeResp.ChangeId == state.BranchInfo.ChangeId {
-			fileMetadata := readLocalFileList()
-			localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := ReadLocalFileList()
+			localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
 
-			if diffHasChanges(localToRemoteDiff) {
+			if DiffHasChanges(localToRemoteDiff) {
 				fmt.Println("\nModified files:")
 				for path, diff := range localToRemoteDiff.Diffs {
 					if diff.Type != pb.FileMetadataDiff_NoOp {
@@ -79,8 +79,8 @@ func Status() {
 
 			}
 		} else if changeResp.ChangeId > state.BranchInfo.ChangeId {
-			fileMetadata := readLocalFileList()
-			remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := ReadLocalFileList()
+			remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}

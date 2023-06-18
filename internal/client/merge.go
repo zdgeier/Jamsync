@@ -38,13 +38,13 @@ func Merge() {
 		os.Exit(1)
 	}
 
-	fileMetadata := readLocalFileList()
-	remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+	fileMetadata := ReadLocalFileList()
+	remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	if diffHasChanges(remoteToLocalDiff) {
+	if DiffHasChanges(remoteToLocalDiff) {
 		fmt.Println("You currently have active changes. Run `jam push` to push your local changes.")
 		return
 	}

@@ -188,11 +188,6 @@ a.Header-login {
     padding-left: 48px;
 }
 
-
-.is-hidden {
-    display: none;
-}
-
 code {
     font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace;
 }
@@ -452,25 +447,88 @@ main {
 .OpenDirectory {
     width: 100%;
     height: 100%;
+    max-width: 500px;
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
+    flex-direction: column;
+    text-align: center;
 }
 
 .OpenDirectory-button {
     --primary: var(--dark-blue);
     --secondary: var(--bright-pink);
+    max-width: 264px;
     padding: 10px;
     font-size: 1.25em;
     font-weight: 700;
+    width: 100%;
     color: var(--primary);
     background-color: var(--secondary);
     border: 2px solid var(--bright-pink);
+    margin: 16px;
 }
 
 .OpenDirectory-button:hover {
+    cursor: pointer;    
     --primary: var(--bright-pink);
     --secondary: var(--dark-blue);
 }
 
+.InitProject {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+}
 
+.InitProject-formButtons {
+    display: flex;
+    gap: 16px;
+}
+
+.InitProject-pathSelect {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.InitProject-input {
+    color: white;
+    background-color: var(--dark-blue);
+    border: 2px solid var(--bright-pink);
+    width: auto;
+    text-align: center;
+    min-width: 1em;
+    grid-area: 1 / 3;
+    font: inherit;
+    margin: 0;
+    background: none;
+    appearance: none;
+}
+
+.InitProject-button {
+    --primary: var(--dark-blue);
+    --secondary: var(--bright-pink);
+    padding: 10px;
+    font-size: 1.25em;
+    font-weight: 700;
+    width: 100%;
+    color: var(--primary);
+    background-color: var(--secondary);
+    border: 2px solid var(--bright-pink);
+    margin-top: 32px;
+}
+
+.InitProject-button:hover {
+    cursor: pointer;    
+    --primary: var(--bright-pink);
+    --secondary: var(--dark-blue);
+}
+
+.is-hidden {
+    display: none;
+}

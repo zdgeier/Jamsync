@@ -46,12 +46,12 @@ func Checkout() {
 
 	if state.CommitInfo == nil || state.BranchInfo != nil {
 		if os.Args[2] == "main" || os.Args[2] == "mainline" {
-			fileMetadata := readLocalFileList()
-			localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := ReadLocalFileList()
+			localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
-			if diffHasChanges(localToRemoteDiff) {
+			if DiffHasChanges(localToRemoteDiff) {
 				fmt.Println("Some changes locally have not been pushed. Run `jam push` to push your local changes.")
 				os.Exit(1)
 			}
@@ -111,13 +111,13 @@ func Checkout() {
 		}
 
 		// if branch already exists, do a pull
-		fileMetadata := readLocalFileList()
-		remoteToLocalDiff, err := diffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
+		fileMetadata := ReadLocalFileList()
+		remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
-		if diffHasChanges(remoteToLocalDiff) {
+		if DiffHasChanges(remoteToLocalDiff) {
 			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)

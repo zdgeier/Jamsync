@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func diffHasChanges(diff *pb.FileMetadataDiff) bool {
+func DiffHasChanges(diff *pb.FileMetadataDiff) bool {
 	for _, diff := range diff.GetDiffs() {
 		if diff.Type != pb.FileMetadataDiff_NoOp {
 			return true
@@ -80,7 +80,7 @@ func worker(pathInfos <-chan PathInfo, results chan<- PathFile) {
 	}
 }
 
-func readLocalFileList() *pb.FileMetadata {
+func ReadLocalFileList() *pb.FileMetadata {
 	var ignorer = &jamignore.JamsyncIgnorer{}
 	err := ignorer.ImportPatterns(".gitignore")
 	if err != nil {
@@ -751,7 +751,7 @@ func diffRemoteToLocalCommit(apiClient pb.JamsyncAPIClient, projectId uint64, co
 	}, err
 }
 
-func diffRemoteToLocalBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+func DiffRemoteToLocalBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return nil, err
@@ -851,7 +851,7 @@ func diffLocalToRemoteCommit(apiClient pb.JamsyncAPIClient, projectId uint64, co
 	}, err
 }
 
-func diffLocalToRemoteBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+func DiffLocalToRemoteBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return nil, err

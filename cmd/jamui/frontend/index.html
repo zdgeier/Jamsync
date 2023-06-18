@@ -9,29 +9,31 @@
 
 <body>
     <main>
-        <!-- <header class="Header">
-            <div class="Header-top">
-                <div class="Header-topLeft">
-                    <a class="Header-homeLink" href="/">
-                        <span class="Header-homeText">Jamsync</span>
-                    </a>
-                </div>
-            </div>
-            <div class="Header-bottom">
-                <div class="Header-bottomLeft">
-                    <a class="Header-bottomLink" href="/">Home</a>
-                </div>
-            </div>
-        </header> -->
-    <div id="app">
-        <!-- <img id="logo" class="logo"> -->
-        <div class="OpenDirectory">
-            <span>
-                <button class="OpenDirectory-button" id="opendirectory">Select a project directory</button>
-            </span>
+        <div id="screen-open-directory" class="OpenDirectory">
+            <img id="logo" class="logo" height="100" width="100">
+            <button class="OpenDirectory-button" id="screen-open-directory-initializeNewProject">Initialize Project</button>
+            <button class="OpenDirectory-button" id="screen-open-directory-openExistingProject">Open Project</button>
+            <div id="screen-open-directory-status"></div>
         </div>
-        <ul id="projects"></ul>
-    </div>
+        <div id="screen-init-new-project" class="InitProject is-hidden">
+            <form autocomplete="off">
+                <label for="screen-init-new-project-name">Project Name:</label>
+                <input class="InitProject-input" type="text" id="screen-init-new-project-name" name="screen-init-new-project-name" autocomplete="off"><br><br>
+                <div class="InitProject-pathSelect">
+                    <label for="screen-init-new-project-path">Path:</label>
+                    <input class="InitProject-input" type="text" id="screen-init-new-project-path" name="screen-init-new-project-path" autocomplete="off"><br><br>
+                    <a class="InitProject-link" id="screen-init-new-project-path-dialog" name="screen-init-new-project-path-dialog">Open</a><br><br>
+                </div>
+                <div id="screen-init-new-project-status"></div>
+                <div class="InitProject-formButtons">
+                    <button type="button" class="InitProject-button" id="screen-init-new-project-back">Back</button>
+                    <button type="button" class="InitProject-button" id="screen-init-new-project-submit">Submit</button>
+                </div>
+            </form>
+        </div>
+        <div id="screen-project-status" class="ProjectStatus is-hidden">
+            <ul id="screen-project-status-info"></ul>
+        </div>
     </main>
     <script src="./src/main.js" type="module"></script>
 </body>

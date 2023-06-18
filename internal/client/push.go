@@ -37,15 +37,15 @@ func Push() {
 		os.Exit(1)
 	}
 
-	fileMetadata := readLocalFileList()
-	localToRemoteDiff, err := diffLocalToRemoteBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId, fileMetadata)
+	fileMetadata := ReadLocalFileList()
+	localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	changeId := stateFile.BranchInfo.ChangeId + 1
-	if diffHasChanges(localToRemoteDiff) {
-		err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId+1, fileMetadata, localToRemoteDiff)
+	if DiffHasChanges(localToRemoteDiff) {
+		err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, changeId, fileMetadata, localToRemoteDiff)
 		if err != nil {
 			log.Panic(err)
 		}

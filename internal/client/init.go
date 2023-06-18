@@ -14,11 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func initNewProject(apiClient pb.JamsyncAPIClient) {
-	fmt.Print("Project Name: ")
-	var projectName string
-	fmt.Scan(&projectName)
-
+func InitNewProject(apiClient pb.JamsyncAPIClient, projectName string) {
 	resp, err := apiClient.AddProject(context.Background(), &pb.AddProjectRequest{
 		ProjectName: projectName,
 	})
@@ -36,7 +32,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 		log.Panic(err)
 	}
 
-	fileMetadata := readLocalFileList()
+	fileMetadata := ReadLocalFileList()
 	fileMetadataDiff, err := diffLocalToRemoteCommit(apiClient, resp.GetProjectId(), branchResp.GetBranchId(), fileMetadata)
 	if err != nil {
 		panic(err)
@@ -76,11 +72,7 @@ func initNewProject(apiClient pb.JamsyncAPIClient) {
 	fmt.Println("Done! Run `jam checkout <branch name>` to start making changes.")
 }
 
-func initExistingProject(apiClient pb.JamsyncAPIClient) {
-	fmt.Print("Name of project to download: ")
-	var projectName string
-	fmt.Scan(&projectName)
-
+func InitExistingProject(apiClient pb.JamsyncAPIClient, projectName string) {
 	resp, err := apiClient.GetProjectId(context.Background(), &pb.GetProjectIdRequest{
 		ProjectName: projectName,
 	})
@@ -142,10 +134,16 @@ func InitConfig() {
 		var flag string
 		fmt.Scanln(&flag)
 		if strings.ToLower(flag) == "y" {
-			initNewProject(apiClient)
+			fmt.Print("Project Name: ")
+			var projectName string
+			fmt.Scan(&projectName)
+			InitNewProject(apiClient, projectName)
 			break
 		} else if strings.ToLower(flag) == "n" {
-			initExistingProject(apiClient)
+			fmt.Print("Name of project to download: ")
+			var projectName string
+			fmt.Scan(&projectName)
+			InitExistingProject(apiClient, projectName)
 			break
 		}
 	}
