@@ -597,7 +597,7 @@ func downloadCommittedFiles(ctx context.Context, apiClient pb.JamsyncAPIClient, 
 	<-done
 }
 
-func applyFileListDiffCommit(apiClient pb.JamsyncAPIClient, projectId, commitId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
+func ApplyFileListDiffCommit(apiClient pb.JamsyncAPIClient, projectId, commitId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetFile().GetDir() {
@@ -649,7 +649,7 @@ func applyFileListDiffCommit(apiClient pb.JamsyncAPIClient, projectId, commitId 
 	return nil
 }
 
-func applyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
+func ApplyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, branchId uint64, changeId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetFile().GetDir() {
@@ -701,7 +701,7 @@ func applyFileListDiffBranch(apiClient pb.JamsyncAPIClient, projectId uint64, br
 	return nil
 }
 
-func diffRemoteToLocalCommit(apiClient pb.JamsyncAPIClient, projectId uint64, commitId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+func DiffRemoteToLocalCommit(apiClient pb.JamsyncAPIClient, projectId uint64, commitId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return nil, err

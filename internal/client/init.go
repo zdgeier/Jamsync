@@ -87,12 +87,12 @@ func InitExistingProject(apiClient pb.JamsyncAPIClient, projectName string) {
 		log.Panic(err)
 	}
 
-	diffRemoteToLocalResp, err := diffRemoteToLocalCommit(apiClient, resp.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
+	diffRemoteToLocalResp, err := DiffRemoteToLocalCommit(apiClient, resp.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = applyFileListDiffCommit(apiClient, resp.GetProjectId(), commitResp.CommitId, diffRemoteToLocalResp)
+	err = ApplyFileListDiffCommit(apiClient, resp.GetProjectId(), commitResp.CommitId, diffRemoteToLocalResp)
 	if err != nil {
 		log.Panic(err)
 	}

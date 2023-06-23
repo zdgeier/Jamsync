@@ -3,6 +3,8 @@
 
 export function ChangeDirectory(arg1:string):Promise<void>;
 
+export function Checkout(arg1:string):Promise<string>;
+
 export function GetInfo():Promise<Array<string>>;
 
 export function InitExistingProject(arg1:string,arg2:string):Promise<void>;

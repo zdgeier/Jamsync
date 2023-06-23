@@ -29,6 +29,7 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	authfile.Logout()
 	a.ctx = ctx
 	authFile, err := authfile.Authorize()
 	if err != nil {
@@ -56,6 +57,126 @@ func (a *App) startup(ctx context.Context) {
 // 	}
 // 	return projects
 // }
+
+func (a *App) Checkout(branchName string) string {
+	state, err := statefile.Find()
+	if err != nil {
+		panic("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
+	}
+
+	if state.CommitInfo == nil || state.BranchInfo != nil {
+		if branchName == "main" || branchName == "mainline" {
+			fileMetadata := client.ReadLocalFileList()
+			localToRemoteDiff, err := client.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			if err != nil {
+				log.Panic(err)
+			}
+			if client.DiffHasChanges(localToRemoteDiff) {
+				return "Some changes locally have not been pushed. Run `jam push` to push your local changes."
+			}
+
+			commitResp, err := a.client.GetProjectCurrentCommit(context.Background(), &pb.GetProjectCurrentCommitRequest{
+				ProjectId: state.ProjectId,
+			})
+			if err != nil {
+				log.Panic(err)
+			}
+
+			diffRemoteToLocalResp, err := client.DiffRemoteToLocalCommit(a.client, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
+			if err != nil {
+				log.Panic(err)
+			}
+
+			err = client.ApplyFileListDiffCommit(a.client, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			err = statefile.StateFile{
+				ProjectId: state.ProjectId,
+				CommitInfo: &statefile.CommitInfo{
+					CommitId: commitResp.CommitId,
+				},
+			}.Save()
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			return "Must be on mainline to checkout."
+		}
+	}
+
+	if branchName == "main" || branchName == "mainline" {
+		fmt.Println("`main` and `mainline` are branch names reserved for commits. Please choose another branch name.")
+		os.Exit(1)
+	}
+
+	resp, err := a.client.ListBranches(a.ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
+	if err != nil {
+		panic(err)
+	}
+
+	if branchId, ok := resp.GetBranches()[branchName]; ok {
+		if branchId == state.BranchInfo.BranchId {
+			return fmt.Sprintf("%s %s", "Already on", branchName)
+		}
+
+		changeResp, err := a.client.GetBranchCurrentChange(context.TODO(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: branchId})
+		if err != nil {
+			panic(err)
+		}
+
+		// if branch already exists, do a pull
+		fileMetadata := client.ReadLocalFileList()
+		remoteToLocalDiff, err := client.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if client.DiffHasChanges(remoteToLocalDiff) {
+			err = client.ApplyFileListDiffBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+			if err != nil {
+				log.Panic(err)
+			}
+			for key, val := range remoteToLocalDiff.GetDiffs() {
+				if val.Type != pb.FileMetadataDiff_NoOp {
+					fmt.Println("Pulled", key)
+				}
+			}
+		} else {
+			fmt.Println("No changes to pull")
+		}
+
+		err = statefile.StateFile{
+			ProjectId: state.ProjectId,
+			BranchInfo: &statefile.BranchInfo{
+				BranchId: state.BranchInfo.BranchId,
+				ChangeId: changeResp.ChangeId,
+			},
+		}.Save()
+		if err != nil {
+			panic(err)
+		}
+		return ""
+	}
+
+	// otherwise, just create a new branch
+	createResp, err := a.client.CreateBranch(a.ctx, &pb.CreateBranchRequest{ProjectId: state.ProjectId, BranchName: branchName})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = statefile.StateFile{
+		ProjectId: state.ProjectId,
+		BranchInfo: &statefile.BranchInfo{
+			BranchId: createResp.BranchId,
+		},
+	}.Save()
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprint("Switched to new branch ", branchName, ".")
+}
 
 func (a *App) ProjectExists(projectName string) bool {
 	resp, err := a.client.ListUserProjects(a.ctx, &pb.ListUserProjectsRequest{})

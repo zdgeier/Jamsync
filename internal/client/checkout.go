@@ -63,12 +63,12 @@ func Checkout() {
 				log.Panic(err)
 			}
 
-			diffRemoteToLocalResp, err := diffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
+			diffRemoteToLocalResp, err := DiffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
 			if err != nil {
 				log.Panic(err)
 			}
 
-			err = applyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
+			err = ApplyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -118,7 +118,7 @@ func Checkout() {
 		}
 
 		if DiffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+			err = ApplyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}

@@ -45,7 +45,7 @@ func Pull() {
 		}
 
 		if DiffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
+			err = ApplyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -74,13 +74,13 @@ func Pull() {
 		}
 
 		fileMetadata := ReadLocalFileList()
-		remoteToLocalDiff, err := diffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, fileMetadata)
+		remoteToLocalDiff, err := DiffRemoteToLocalCommit(apiClient, state.ProjectId, commitResp.CommitId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if DiffHasChanges(remoteToLocalDiff) {
-			err = applyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, remoteToLocalDiff)
+			err = ApplyFileListDiffCommit(apiClient, state.ProjectId, commitResp.CommitId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}

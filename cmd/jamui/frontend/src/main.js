@@ -1,42 +1,15 @@
 import './style.css';
 
 import logo from './assets/images/favicon.svg';
-import { ChangeDirectory, SelectDirectory, ProjectExists, GetInfo, StateFileExists, InitExistingProject, InitNewProject} from '../wailsjs/go/main/App';
+import { ChangeDirectory, SelectDirectory, ProjectExists, GetInfo, StateFileExists, InitExistingProject, InitNewProject, Checkout} from '../wailsjs/go/main/App';
 
 document.getElementById('logo').src = logo;
-// let projectsElement = document.getElementById("projects");
-
-// try {
-//     ListProjects()
-//         .then((result) => {
-//             // Update result with data back from App.Greet()
-//             projectsElement.innerText = result;
-//         })
-//         .catch((err) => {
-//             console.error(err);
-//         });
-// } catch (err) {
-//     console.error(err);
-// }
 
 document.getElementById("screen-open-directory-initializeNewProject").addEventListener('click', async () => {
     let screenOpenDirectoryEl = document.getElementById("screen-open-directory");
     screenOpenDirectoryEl.classList.add("is-hidden");
     let screenInitNewProjectEl = document.getElementById("screen-init-new-project");
     screenInitNewProjectEl.classList.remove("is-hidden");
-    // if (initNewProjectInput.value === "") {
-    //     statusEl.innerHTML = "input a project name"
-    //     return
-    // }
-    // const path = await SelectDirectory()
-    // statusEl.innerHTML = "";
-    // console.log(path, await StateFileExists(path))
-    // if (await StateFileExists(path)) {
-    //     statusEl.innerHTML = "already initialized";
-    // } else {
-    //     console.log(initNewProjectInput.value)
-    //     InitializeNewProject(path, initNewProjectInput.value);
-    // }
 });
 
 document.getElementById("screen-init-new-project-submit").addEventListener('click', async() => {
@@ -82,6 +55,12 @@ document.getElementById("screen-init-new-project-path-dialog").addEventListener(
     document.getElementById("screen-init-new-project-status").innerHTML = "";
 });
 
+document.getElementById("screen-project-status-branch-submit").addEventListener("click", async () => {
+    const branchName = document.getElementById("screen-project-status-branch-name").value;
+    const result = await Checkout(branchName);
+    document.getElementById("screen-project-status-branch-info").innerHTML = result;
+});
+
 
 let currentStatus = [];
 document.getElementById("screen-open-directory-openExistingProject").addEventListener('click', async () => {
@@ -112,30 +91,3 @@ document.getElementById("screen-open-directory-openExistingProject").addEventLis
         }
     }, 2000);
 });
-
-
-
-
-
-// let initNewProjectInput = document.getElementById("initializeNewProjectInput");
-// 
-// let openExistingProjectButton = document.getElementById("openExistingProject");
-// openExistingProjectButton.addEventListener('click', async () => {
-// 
-// })
-
-// window.listprojects = function() {
-//     try {
-//         ListProjects()
-//             .then((result) => {
-//                 // Update result with data back from App.Greet()
-//                 projectsElement.innerText = result;
-//             })
-//             .catch((err) => {
-//                 console.error(err);
-//             });
-//     } catch (err) {
-//         console.error(err);
-//     }
-// }
-// 
