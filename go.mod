@@ -1,4 +1,4 @@
-module github.com/zdgeier/jamsync
+module github.com/zdgeier/jamhub
 
 go 1.18
 

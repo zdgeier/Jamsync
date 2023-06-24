@@ -7,7 +7,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamhub/gen/pb"
 	"github.com/zeebo/xxh3"
 )
 

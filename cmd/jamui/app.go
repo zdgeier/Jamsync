@@ -7,18 +7,18 @@ import (
 	"os"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zdgeier/jamsync/gen/pb"
-	"github.com/zdgeier/jamsync/internal/authfile"
-	"github.com/zdgeier/jamsync/internal/client"
-	"github.com/zdgeier/jamsync/internal/server/server"
-	"github.com/zdgeier/jamsync/internal/statefile"
+	"github.com/zdgeier/jamhub/gen/pb"
+	"github.com/zdgeier/jamhub/internal/jam"
+	"github.com/zdgeier/jamhub/internal/jam/authfile"
+	"github.com/zdgeier/jamhub/internal/jam/statefile"
+	"github.com/zdgeier/jamhub/internal/jamhubgrpc"
 	"golang.org/x/oauth2"
 )
 
 // App struct
 type App struct {
 	ctx    context.Context
-	client pb.JamsyncAPIClient
+	client pb.JamHubClient
 }
 
 // NewApp creates a new App application struct
@@ -36,7 +36,7 @@ func (a *App) startup(ctx context.Context) {
 		panic(err)
 	}
 
-	apiClient, _, err := server.Connect(&oauth2.Token{
+	apiClient, _, err := jamhubgrpc.Connect(&oauth2.Token{
 		AccessToken: string(authFile.Token),
 	})
 	if err != nil {
@@ -61,17 +61,17 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) Checkout(branchName string) string {
 	state, err := statefile.Find()
 	if err != nil {
-		panic("Could not find a `.jamsync` file. Run `jam init` to initialize the project.")
+		panic("Could not find a `.jamhub` file. Run `jam init` to initialize the project.")
 	}
 
 	if state.CommitInfo == nil || state.BranchInfo != nil {
 		if branchName == "main" || branchName == "mainline" {
-			fileMetadata := client.ReadLocalFileList()
-			localToRemoteDiff, err := client.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := jam.ReadLocalFileList()
+			localToRemoteDiff, err := jam.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
-			if client.DiffHasChanges(localToRemoteDiff) {
+			if jam.DiffHasChanges(localToRemoteDiff) {
 				return "Some changes locally have not been pushed. Run `jam push` to push your local changes."
 			}
 
@@ -82,12 +82,12 @@ func (a *App) Checkout(branchName string) string {
 				log.Panic(err)
 			}
 
-			diffRemoteToLocalResp, err := client.DiffRemoteToLocalCommit(a.client, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
+			diffRemoteToLocalResp, err := jam.DiffRemoteToLocalCommit(a.client, state.ProjectId, commitResp.CommitId, &pb.FileMetadata{})
 			if err != nil {
 				log.Panic(err)
 			}
 
-			err = client.ApplyFileListDiffCommit(a.client, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
+			err = jam.ApplyFileListDiffCommit(a.client, state.ProjectId, commitResp.CommitId, diffRemoteToLocalResp)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -127,14 +127,14 @@ func (a *App) Checkout(branchName string) string {
 		}
 
 		// if branch already exists, do a pull
-		fileMetadata := client.ReadLocalFileList()
-		remoteToLocalDiff, err := client.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
+		fileMetadata := jam.ReadLocalFileList()
+		remoteToLocalDiff, err := jam.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
-		if client.DiffHasChanges(remoteToLocalDiff) {
-			err = client.ApplyFileListDiffBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+		if jam.DiffHasChanges(remoteToLocalDiff) {
+			err = jam.ApplyFileListDiffBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -197,7 +197,7 @@ func (a *App) InitNewProject(path string, projectName string) {
 	if err != nil {
 		panic(err)
 	}
-	client.InitNewProject(a.client, projectName)
+	jam.InitNewProject(a.client, projectName)
 }
 
 func (a *App) InitExistingProject(path string, projectName string) {
@@ -205,7 +205,7 @@ func (a *App) InitExistingProject(path string, projectName string) {
 	if err != nil {
 		panic(err)
 	}
-	client.InitExistingProject(a.client, projectName)
+	jam.InitExistingProject(a.client, projectName)
 }
 
 func (a *App) ChangeDirectory(path string) {
@@ -234,7 +234,7 @@ func (a *App) GetInfo() []string {
 
 	state, err := statefile.Find()
 	if err != nil {
-		panic("no .jamsync!")
+		panic("no .jamhub!")
 	}
 	nameResp, err := a.client.GetProjectName(context.Background(), &pb.GetProjectNameRequest{
 		ProjectId: state.ProjectId,
@@ -268,13 +268,13 @@ func (a *App) GetInfo() []string {
 		}
 
 		if changeResp.ChangeId == state.BranchInfo.ChangeId {
-			fileMetadata := client.ReadLocalFileList()
-			localToRemoteDiff, err := client.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := jam.ReadLocalFileList()
+			localToRemoteDiff, err := jam.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
 
-			if client.DiffHasChanges(localToRemoteDiff) {
+			if jam.DiffHasChanges(localToRemoteDiff) {
 				res = append(res, "\nModified files:")
 				for path, diff := range localToRemoteDiff.Diffs {
 					if diff.Type != pb.FileMetadataDiff_NoOp {
@@ -285,8 +285,8 @@ func (a *App) GetInfo() []string {
 				res = append(res, "\nNo local or remote changes.")
 			}
 		} else if changeResp.ChangeId > state.BranchInfo.ChangeId {
-			fileMetadata := client.ReadLocalFileList()
-			remoteToLocalDiff, err := client.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			fileMetadata := jam.ReadLocalFileList()
+			remoteToLocalDiff, err := jam.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}

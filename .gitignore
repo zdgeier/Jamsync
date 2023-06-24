@@ -13,10 +13,11 @@ go.work
 scripts/
 systemd/
 jb
-jamsync.db
-jamsync-build*
-.jamsync
-jamsync-build.zip
+jamhubdata/
+jamhub.db
+jamhub-build*
+.jamhub
+jamhub-build.zip
 .vscode
 gen/
 x509/

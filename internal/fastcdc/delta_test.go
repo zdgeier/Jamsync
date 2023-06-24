@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamhub/gen/pb"
 )
 
 type RandReader struct {

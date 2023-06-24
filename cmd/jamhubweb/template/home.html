@@ -1,0 +1,351 @@
+{{template "head.html" args
+"title" "Home"
+"canonical" ""
+"description" "Jamhub is a open-source version control system for game developers."
+}}
+
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <section class="About">
+            <div class="About-header">
+                <span class="About-headerLeft">Jamhub</span>
+                <svg id="a" width="60px" height="60px" version="1.1" viewBox="0 0 256 256"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <g stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="2.8">
+                        <path
+                            d="m220.45 14.531c-23.261-1.2646-41.24 16.834-58.42 44.842-1.3476 2.1975-.64013 5.0602 1.58 6.3938 2.22 1.3339 10.692 8.9196 12.04 6.7219 8.1343-25.31 31.513-31.681 51.345-36.795 0 0-2.1438-20.924-6.5446-21.163z"
+                            color="#000000" fill="#007a0b" stroke-width="11.269" />
+                        <g fill="#ff007f" stroke-width="11.269">
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-189.16" cy="-105.54"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-152.84" cy="-68.797"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-212.42" cy="-62.836"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-116.73" cy="-6.1428"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-230.51" cy="9.1266"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-199.39" cy="58.236"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-139.22" cy="47.193"
+                                rx="36.007" ry="41.807" />
+                            <ellipse transform="matrix(-.73717 -.67571 .68316 -.73027 0 0)" cx="-175.45" cy="-4.1575"
+                                rx="36.007" ry="41.807" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <h1>Open-source version control for game development</h1>
+            <p class="About-description">
+                It's time for a free and open source collaboration system for game developers. Current closed-source
+                systems, like Perforce and Plastic/Unity DevOps,
+                are expensive, complex, and limit their users. Current open-source solutions, like Git or SVN, are
+                difficult to use
+                and do not scale
+                with large projects containing large files. Game developers want to focus on their game, not their
+                version control.
+            </p>
+
+            <p>
+                Jamhub is a free and open source version control system that uses modern <a href="#algorithm">Content
+                    Defined
+                    Chunking</a>
+                strategies to efficiently track changes to large files and large projects. Currently it's around 2x-10x
+                faster than Git. You can try out a hosted alpha version on this site by
+                <a href="/login">logging in</a> or check out the <a
+                    href="https://github.com/zdgeier/jamhub">AGPL-licensed source on
+                    Github</a>.
+            </p>
+            <p class="About-description">
+                You can <a href="https://discord.gg/6bK3GPKhpa">join the Discord</a> for updates or to get support. If you have any questions
+                or a problem I can help solve, please email me at <a href="zach@jamhub.dev">zach@jamhub.dev</a>.
+            </p>
+            <h2>Problem</h2>
+            <p class="About-description">
+                <a href="https://en.wikipedia.org/wiki/Revision_Control_System#:~:text=Third%20generation%5Bedit%5D">Third
+                    generation</a> version control systems have enabled code collaboration and sharing on a massive
+                scale.
+                Most notably <a href="https://github.com/git/git">Git</a> in combination with hosting platforms like <a
+                    href="https://github.com">Github</a> have improved our ability to reuse and share code. However,
+                game
+                developers have mostly been removed from this movement due to Git's poor support for large files and
+                large projects. There are several problems that will also continue to get worse.
+            </p>
+            <ul>
+                <li>
+                    <b>Files will get larger</b>
+                    <p>Game developers are continuing to create larger files with more
+                        data. Developers want to version their data and assets along with their source code and not have
+                        to interact with another layer on top of their current system.</p>
+                </li>
+                <li>
+                    <b>Repositories will get larger</b>
+                    <p>Game developers are continuing to create more complex projects with more files, distributed
+                        across their team. Monorepos have become the de-facto way to manage large amounts of code in
+                        other industries but even those systems have <a
+                            href="https://news.ycombinator.com/item?id=31792303">little support</a> for this.
+                        Large companies like Google and Facebook have created their own internal solutions to monorepo
+                        problems with <a
+                            href="https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext">Google's
+                            Piper</a> and <a
+                            href="https://engineering.fb.com/2022/11/15/open-source/sapling-source-control-scalable/">Facebook's
+                            Sapling</a> but there are almost no options for companies outside these two.
+                </li>
+                <li>
+                    <b>Closed-source systems restrict sharing and innovation</b>
+                    <p>Perforce is widely used in the professional games industry, but it's expensive,
+                        closed-source, and still has <a href="https://news.ycombinator.com/item?id=9138559">many</a> <a
+                            href="https://weblog.masukomi.org/2007/08/31/dear-perforce-fuck-you/">issues</a>. Game
+                        developers, as well as other developers in other industries, are looking for easy ways to collaborate
+                        with other people without having to go through a sales person.</p>
+                </li>
+                <li>
+                    <b>Build and deploy times will approach zero</b>
+                    <p>Long feedback cycles and deploy times crush engineering productivity. Eventually, the most
+                        productive companies will find ways to minimize the time to get feedback and deploy -- companies
+                        like <a href="https://vercel.com">Vercel</a> have already begun this process for the web, but
+                        we're still a few years away from having truly "instant" previews for other industries. When
+                        build and deploy times
+                        approach zero, there will be little separation between local and remote development
+                        environments. Developers will begin to expect to deploy and collaborate in "realtime", rather
+                        than waiting to commit and push their changes.</p>
+                </li>
+                <li>
+                    <b>Networks will get much faster and reliable</b>
+                    <p>Current version control systems do not take advantage of how fast our networks can be.
+                        Downloading an entire monorepo with years of history for each file no longer makes sense and
+                        developers are nearly always online.</p>
+                </li>
+            </ul>
+            Third generation version control systems, almost all of which were created in the
+            mid-2000's, were created in a widely different storage, network and build environment than what we have
+            today.
+            These changes, as they continue to evolve over the next decade, will create a need for a "fourth
+            generation" version control system.
+            </p>
+            <h2>Fourth Generation Version Control</h2>
+            <p class="About-description">
+            <ul>
+                <li>
+                    <b>Seamless large file support</b>
+                    <p>Git and other systems currently rely on an additional layer to support large files. Ultimately,
+                        large files are no different than small files, and our version control system should be able to
+                        scale efficiently between the two.</p>
+                </li>
+                <li>
+                    <b>Monorepo support</b>
+                    <p>Versioning and deploying a monorepo efficiently should be built into the version control system.
+                        Changes in one project (like adding a large binary) should not slow down the rest of the
+                        company. There needs to be support for a large amount of files (>100 million), built-in
+                        permissions, file locking, and dependency resolution to enable instant deploys and
+                        collaboration.
+                </li>
+                <li>
+                    <b>Efficient realtime syncing between local and remote</b>
+                    <p>If build times approach zero, developers should be able to collaborate and ship code in real
+                        time, rather than waiting for other developers to manually commit push up their code. With
+                        syncing built into the version control system, we'll be able to know if merge conflicts occur
+                        and constantly merge remote changes into the local version.</p>
+                </li>
+                <li>
+                    <b>Fully-featured virtual file system</b>
+                    <p>To enable efficient local development and fast deploys, our version control system should be able
+                        to fetch files as-needed over a network, rather than cloning an entire repository every time.
+                    </p>
+                </li>
+                <li>
+                    <b>Direct API Access</b>
+                    <p>Many systems, such as game engines, CAD software, or file storage solutions, need ways to store
+                        and version large amounts of data. We should enable these systems to integrate into the version
+                        control system through an open API.</p>
+                </li>
+            </ul>
+            </p>
+            <h2 id="jamhub">Jamhub</h2>
+            <p class="About-description">
+                Jamhub is an in-development fourth generation version control system that is being built for game
+                developers.
+                You can currently do things most that you would expect from a current version control system, like pulling,
+                pushing, branching, and merging, but it's not quite ready for production use -- expect some bugs. The
+                core algorithm
+                has been implemented but there's more work remaining to build out features that developers expect from a
+                full collaboration
+                platform. Please <a href="https://discord.gg/6bK3GPKhpa">join the Discord</a> and <a href="https://github.com/zdgeier/jamhub">star the repo in Github</a> to follow development.
+            </p>
+            <h3>Terminology</h3>
+            <p class="About-description">
+                Since Jamhub works a little differently than most version control systems, it's necessary to define
+                some words since they may have slightly different meaning than other systems.
+            <ul>
+                <li><b>Mainline</b> - The production history of the project. Made up of a series of "commits" that
+                    represent good versions of the project.</li>
+                <li><b>Branch</b> - A workspace for developers to make changes in. Developers will make "changes" in
+                    their branch and merge into the "mainline" when approved/ready. "Changes" will be tracked while in
+                    the branch, but will be squashed into a single "commit" when merged into the mainline. Eventually,
+                    changes will be able to be synced live between local developer machine and their branch.</li>
+                <li><b>Change</b> - A snapshot of a branch while developers are working on their project, made by doing
+                    a `jam push`. </li>
+                <li><b>Commit</b> - A snapshot of the production version of the project, made by merging in a "branch".
+                </li>
+                <li><b>Merge</b> - Occurs when a branch is squashed and committed to the "mainline".</li>
+            </ul>
+            </p>
+            <iframe class="About-videoLarge" width="100%" height="550px" src="https://www.youtube.com/embed/dFiwEmgvzuI"
+                title="Jamhub demo video" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+            <h3 id="benchmark">Benchmarks</h3>
+            <p class="About-description">
+                This section compares Jamhub upload and download speed for a directory to Git. Note that these numbers
+                are not final and future features will give Jamhub
+                ways to make typical workflows faster, like directory mounting over NFS. Also, these are raw file
+                measurements, meaning no previous versions are uploaded or downloaded (which is to Git's advantage).
+            </p>
+            <p>
+            <ul class="Benchmark">
+                <li>
+                    <a href="https://github.com/git/git">Git Source</a> - 4287 files, 77MB
+                </li>
+                <li>
+                    <table class="Benchmark-table">
+                        <thead>
+                            <tr class="Benchmark-tableRow">
+                                <th></th>
+                                <th class="Benchmark-tableHeader">Upload</th>
+                                <th class="Benchmark-tableHeader">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Git</td>
+                                <td class="Benchmark-tableData">19.583s</td>
+                                <td class="Benchmark-tableData">47.616s</td>
+                            </tr>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableData">8.357s</td>
+                                <td class="Benchmark-tableData">4.265s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </li>
+                <li>
+                    <a href="https://github.com/torvalds/linux">Linux Source</a> - 78351 files, 1.4G
+                </li>
+                <li>
+                    <table class="Benchmark-table">
+                        <thead>
+                            <tr class="Benchmark-tableRow">
+                                <th></th>
+                                <th class="Benchmark-tableHeader">Upload</th>
+                                <th class="Benchmark-tableHeader">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Git</td>
+                                <td class="Benchmark-tableData">8m32.365s</td>
+                                <td class="Benchmark-tableData">5m18.194s</td>
+                            </tr>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableData">56.401s</td>
+                                <td class="Benchmark-tableData">28.531s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </li>
+                <li>
+                    <a href="https://www.kaggle.com/datasets/jessicali9530/celeba-dataset">Celeba Dataset</a> - 202599
+                    files, 1.8G
+                </li>
+                <li>
+                    <table class="Benchmark-table">
+                        <thead>
+                            <tr class="Benchmark-tableRow">
+                                <th></th>
+                                <th class="Benchmark-tableHeader">Upload</th>
+                                <th class="Benchmark-tableHeader">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Git</td>
+                                <td class="Benchmark-tableData">1hr6m46s</td>
+                                <td class="Benchmark-tableData">1m52.665s</td>
+                            </tr>
+                            <tr class="Benchmark-tableRow">
+                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableData">11m0.868s</td>
+                                <td class="Benchmark-tableData">4m39.101s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </li>
+            </ul>
+
+            Measurements from Jamhub hosted in us-west-2 from Seattle and measurements from Git repositories hosted by
+            Github. Obviously, there are more operations
+            that matter in version control than just uploading and downloading an entire repository, but this is just a
+            demonstration to show what improvements can be made in our current systems.
+            </p>
+            <h2 id="algorithm">Algorithm</h2>
+            <p class="About-description">
+                The idea behind Jamhub based off of the <a
+                    href="https://www.andrew.cmu.edu/course/15-749/READINGS/required/cas/tridgell96.pdf">rsync
+                    algorithm</a> and <a
+                    href="https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia">Content Defined
+                    Chunking (CDC)</a>. If you haven't read these, I would highly recommend them!
+            </p>
+            <h3>How Jamhub uses Rsync and CDC</h3>
+            <p class="About-description">
+                The main idea behind Jamhub is that we can store the operations sent by the sender in an rsync-like
+                stream to track changes to
+                a file. This means we treat
+                rsync operations like a delta chain that we can use later to regenerate the file. The storage of deltas
+                and their usage to regenerate a file
+                is similar to the Mercurial concept of a <a href="https://www.mercurial-scm.org/wiki/Revlog">Revlog</a>.
+                However, the advantage of using rsync blocks is that we can
+                efficiently store changes to, and regenerate, arbitrarily large files since these blocks can be streamed
+                and regenerated independently.
+
+            </p>
+            <h3>Data pointers</h3>
+            <p>In each block, we can store the location of the last data block to regenerate the file efficiently.
+                By using blocks instead of an xdelta approach, we can store pointers in each block find the last actual
+                data block to use in the file, rather than regenerating the file through a delta chain which Mercurial
+                does. Mercurial <a
+                    href="https://wiki.mercurial-scm.org/RevlogNG#Deficiencies_in_original_revlog_format">essentially
+                    caches the
+                    entire file</a> at certain points and uses this later to have a smaller regeneration length.</p>
+            <h3>Branches</h3>
+            <p class="About-description">
+                A chain of changes, formed by the process above, can be used to regenerate every file in a project.
+                Branches can be automatically rebased on top of the mainline.
+                This means that every branch will always be up-to-date. If conflicts occur during the rebase, a branch
+                will need manual merging.
+            </p>
+            <h3>Limitations</h3>
+            <p class="About-description">
+                The goal is to be able to handle over 100M files and over 1TB-sized files in a single repository. We're
+                not there yet in the current implementation (~1M files with 16GB-sized files) but should be there in
+                the next couple months.
+            </p>
+            <h3>Implementation</h3>
+            <p class="About-description">
+                Jamhub is being written from scratch in <a href="https://go.dev/">Golang</a> and uses <a
+                    href="https://github.com/mattn/go-sqlite3">mattn/go-sqlite3</a> to store projects and change
+                information. <a href="https://grpc.io/">gRPC</a> and <a
+                    href="https://developers.google.com/protocol-buffers">Protocol buffers</a>
+                are used for service definitions and data serialization.
+            </p>
+            <h3>Acknowledgements</h3>
+            <p>This awesome site <a href="https://github.com/panr/hugo-theme-terminal">theme</a> is made by <a
+                    href="https://twitter.com/panr">@panr</a> and adapted to this site.
+        </section>
+    </main>
+    {{template "footer.html"}}
+</body>
+{{template "foot.html"}}

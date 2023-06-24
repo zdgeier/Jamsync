@@ -1,29 +1,29 @@
 # Local Dev ===========================
 client:
-	JAM_ENV=local go run cmd/client/main.go
+	JAM_ENV=local go run cmd/jamcli/main.go
 
 web:
-	cd cmd/web/; JAM_ENV=local go run main.go
+	cd cmd/jamhubweb/; JAM_ENV=local go run main.go
 
 server:
-	JAM_ENV=local go run cmd/server/main.go
+	JAM_ENV=local go run cmd/jamhubgrpc/main.go
 
 # Build ================================
 
 clean:
-	rm -rf jamsync-build && rm -rf .jamsync && rm -rf jamsync-build.zip && rm -rf internal/server/client/jb && rm -rf jb/
+	rm -rf jamhub-build && rm -rf .jamhub && rm -rf jamhub-build.zip && rm -rf jamhubdata/
 
 zipself:
-	git archive --format=zip --output jamsync-source.zip HEAD && mkdir -p ./jamsync-build/ && mv jamsync-source.zip ./jamsync-build/
+	git archive --format=zip --output jamhub-source.zip HEAD && mkdir -p ./jamhub-build/ && mv jamhub-source.zip ./jamhub-build/
 
 protos:
 	mkdir -p gen/go && protoc --proto_path=proto --go_out=gen/pb --go_opt=paths=source_relative --go-grpc_out=gen/pb --go-grpc_opt=paths=source_relative proto/*.proto
 
 buildeditor:
-	cd cmd/web/editor && ./node_modules/.bin/rollup -c rollup.config.mjs && mv *.bundle.js ../public/
+	cd cmd/jamhubweb/editor && ./node_modules/.bin/rollup -c rollup.config.mjs && mv *.bundle.js ../public/
 
 movewebassets:
-	cp -R cmd/web/public jamsync-build/; cp -R cmd/web/template jamsync-build/;
+	cp -R cmd/jamhubweb/public jamhub-build/; cp -R cmd/jamhubweb/template jamhub-build/;
 
 buildui:
 	./scripts/buildui.sh
@@ -34,22 +34,22 @@ buildclients:
 
 # Run on server since ARM has some weirdness with cgo
 buildservers:
-	go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1" -o jamserver cmd/server/main.go && go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1"  -o jamweb cmd/web/main.go
+	go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1" -o jamserver cmd/jamhubgrpc/main.go && go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1"  -o jamweb cmd/jamhubweb/main.go
 
 zipbuild:
-	zip -r jamsync-build.zip jamsync-build/
+	zip -r jamhub-build.zip jamhub-build/
 
-# Make sure to setup hosts file to resolve ssh.prod.jamsync.dev to proper backend server.
+# Make sure to setup hosts file to resolve ssh.prod.jamhub.dev to proper backend server.
 uploadbuild:
-	scp -i ~/jamsync-prod-us-west-1.pem ./jamsync-build.zip ec2-user@ssh.prod.jamsync.dev:~/jamsync-build.zip
+	scp -i ~/jamsync-prod-us-west-1.pem ./jamhub-build.zip ec2-user@ssh.prod.jamsync.dev:~/jamhub-build.zip
 
 # Needed since make doesn't build same target twice and I didn't bother to find a better way
 cleanbuild:
-	rm -rf jamsync-build && rm -rf jamsync-build.zip
+	rm -rf jamhub-build && rm -rf jamhub-build.zip
 
 # Deploy ===============================
 
-# Make sure to setup hosts file to resolve ssh.prod.jamsync.dev to proper backend server.
+# Make sure to setup hosts file to resolve ssh.prod.jamhub.dev to proper backend server.
 deploy:
 	./scripts/deploy.sh
 
@@ -64,7 +64,7 @@ installclient:
 	go build -ldflags "-X main.built=`date -u  +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1" -o jam cmd/client/main.go && mv jam ~/bin/jam
 
 installclientremote:
-	rm -rf jam_darwin_arm64.zip && wget https://jamsync.dev/public/jam_darwin_arm64.zip && unzip jam_darwin_arm64.zip && mv jam ~/bin/jam && rm -rf jam_darwin_arm64.zip
+	rm -rf jam_darwin_arm64.zip && wget https://jamhub.dev/public/jam_darwin_arm64.zip && unzip jam_darwin_arm64.zip && mv jam ~/bin/jam && rm -rf jam_darwin_arm64.zip
 
 grpcui:
 	grpcui -insecure 0.0.0.0:14357

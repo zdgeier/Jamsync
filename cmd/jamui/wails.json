@@ -1,13 +1,13 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "Jamsync",
-  "outputfilename": "Jamsync",
+  "name": "Jamhub",
+  "outputfilename": "Jamhub",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "Zachary Geier",
-    "email": "zach@jamsync.dev"
+    "email": "zach@jamhub.dev"
   }
 }

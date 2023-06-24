@@ -1,10 +1,10 @@
 syntax = "proto3";
 package pb;
 
-option go_package = "github.com/zdgeier/jamsync/proto/pb";
+option go_package = "github.com/zdgeier/jamhub/proto/pb";
 import "google/protobuf/timestamp.proto";
 
-service JamsyncAPI {
+service JamHub {
     // Project operations
     rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
     rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);

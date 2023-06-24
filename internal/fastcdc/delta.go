@@ -1,11 +1,11 @@
-// Author: Zach Geier (zach@jamsync.dev)
+// Author: Zach Geier (zach@jamhub.dev)
 
 package fastcdc
 
 import (
 	"io"
 
-	"github.com/zdgeier/jamsync/gen/pb"
+	"github.com/zdgeier/jamhub/gen/pb"
 )
 
 type OpType byte

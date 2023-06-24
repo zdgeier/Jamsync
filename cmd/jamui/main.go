@@ -21,7 +21,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "Jamsync",
+		Title:  "Jamhub",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
@@ -44,7 +44,7 @@ func main() {
 			Appearance:          mac.NSAppearanceNameDarkAqua,
 			WindowIsTranslucent: false,
 			About: &mac.AboutInfo{
-				Title: "Jamsync",
+				Title: "Jamhub",
 				Icon:  icon,
 			},
 		},
