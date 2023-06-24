@@ -34,7 +34,7 @@ buildclients:
 
 # Run on server since ARM has some weirdness with cgo
 buildservers:
-	go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1" -o jamserver cmd/jamhubgrpc/main.go && go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1"  -o jamweb cmd/jamhubweb/main.go
+	go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1" -o jamhubgrpc cmd/jamhubgrpc/main.go && go build -ldflags "-X main.built=`date -u +%Y-%m-%d+%H:%M:%S` -X main.version=v0.0.1"  -o jamhubweb cmd/jamhubweb/main.go
 
 zipbuild:
 	zip -r jamhub-build.zip jamhub-build/
