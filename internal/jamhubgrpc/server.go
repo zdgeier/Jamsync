@@ -111,7 +111,7 @@ func Connect(accessToken *oauth2.Token) (client pb.JamHubClient, closer func(), 
 			return nil, nil, err
 		}
 		cp.AppendCertsFromPEM(certData)
-		creds = credentials.NewClientTLSFromCert(cp, "jamhub.dev")
+		creds = credentials.NewClientTLSFromCert(cp, "jamsync.dev")
 	} else {
 		cp := x509.NewCertPool()
 		certData, err := devF.ReadFile("devclientkey.cer")
@@ -119,7 +119,7 @@ func Connect(accessToken *oauth2.Token) (client pb.JamHubClient, closer func(), 
 			return nil, nil, err
 		}
 		cp.AppendCertsFromPEM(certData)
-		creds = credentials.NewClientTLSFromCert(cp, "jamhub.dev")
+		creds = credentials.NewClientTLSFromCert(cp, "jamsync.dev")
 	}
 	opts = append(opts, grpc.WithTransportCredentials(creds))
 
