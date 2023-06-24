@@ -32,7 +32,7 @@ func AuthorizeUser() (string, error) {
 
 	// construct the authorization URL (with Auth0 as the authorization provider)
 	authorizationURL := fmt.Sprintf(
-		"https://%s/authorize?audience=api.jamhub.dev"+
+		"https://%s/authorize?audience=api.jamsync.dev"+
 			"&scope=write:projects"+
 			"&response_type=code&client_id=%s"+
 			"&code_challenge=%s"+

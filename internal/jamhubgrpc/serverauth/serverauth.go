@@ -62,7 +62,7 @@ func ensureValidToken(token string) (*validator.ValidatedClaims, error) {
 		provider.KeyFunc,
 		validator.RS256,
 		issuerURL.String(),
-		[]string{"api.jamhub.dev"},
+		[]string{"api.jamsync.dev"},
 		validator.WithCustomClaims(
 			func() validator.CustomClaims {
 				return &CustomClaims{}
