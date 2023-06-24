@@ -53,7 +53,7 @@ func New() (closer func(), err error) {
 
 	var cert tls.Certificate
 	if jamenv.Env() == jamenv.Prod {
-		cert, err = tls.LoadX509KeyPair("/etc/jamhub/fullchain.pem", "/etc/jamhub/privkey.pem")
+		cert, err = tls.LoadX509KeyPair("/etc/jamsync/fullchain.pem", "/etc/jamsync/privkey.pem")
 	} else {
 		cert, err = tls.LoadX509KeyPair(filepath.Clean("x509/publickey.cer"), filepath.Clean("x509/private.key"))
 	}
