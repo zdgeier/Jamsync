@@ -166,7 +166,7 @@ func MaxAge(h http.Handler) http.Handler {
 		}
 
 		if ext == ".woff2" {
-			w.Header().Add("Access-Control-Allow-Origin", "https://jamhub.us.auth0.com")
+			w.Header().Add("Access-Control-Allow-Origin", "https://jamsync.us.auth0.com")
 		}
 
 		if age > 0 {
