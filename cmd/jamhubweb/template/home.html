@@ -1,7 +1,7 @@
 {{template "head.html" args
 "title" "Home"
 "canonical" ""
-"description" "Jamhub is a open-source version control system for game developers."
+"description" "JamHub is a open-source version control system for game developers."
 }}
 
 <body>
@@ -9,7 +9,7 @@
     <main>
         <section class="About">
             <div class="About-header">
-                <span class="About-headerLeft">Jamhub</span>
+                <span class="About-headerLeft">JamHub</span>
                 <svg id="a" width="60px" height="60px" version="1.1" viewBox="0 0 256 256"
                     xmlns="http://www.w3.org/2000/svg">
                     <g stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="2.8">
@@ -49,7 +49,7 @@
             </p>
 
             <p>
-                Jamhub is a free and open source version control system that uses modern <a href="#algorithm">Content
+                JamHub is a free and open source version control system that uses modern <a href="#algorithm">Content
                     Defined
                     Chunking</a>
                 strategies to efficiently track changes to large files and large projects. Currently it's around 2x-10x
@@ -163,9 +163,9 @@
                 </li>
             </ul>
             </p>
-            <h2 id="jamhub">Jamhub</h2>
+            <h2 id="jamhub">JamHub</h2>
             <p class="About-description">
-                Jamhub is an in-development fourth generation version control system that is being built for game
+                JamHub is an in-development fourth generation version control system that is being built for game
                 developers.
                 You can currently do things most that you would expect from a current version control system, like pulling,
                 pushing, branching, and merging, but it's not quite ready for production use -- expect some bugs. The
@@ -176,7 +176,7 @@
             </p>
             <h3>Terminology</h3>
             <p class="About-description">
-                Since Jamhub works a little differently than most version control systems, it's necessary to define
+                Since JamHub works a little differently than most version control systems, it's necessary to define
                 some words since they may have slightly different meaning than other systems.
             <ul>
                 <li><b>Mainline</b> - The production history of the project. Made up of a series of "commits" that
@@ -193,13 +193,13 @@
             </ul>
             </p>
             <iframe class="About-videoLarge" width="100%" height="550px" src="https://www.youtube.com/embed/dFiwEmgvzuI"
-                title="Jamhub demo video" frameborder="0"
+                title="JamHub demo video" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen></iframe>
             <h3 id="benchmark">Benchmarks</h3>
             <p class="About-description">
-                This section compares Jamhub upload and download speed for a directory to Git. Note that these numbers
-                are not final and future features will give Jamhub
+                This section compares JamHub upload and download speed for a directory to Git. Note that these numbers
+                are not final and future features will give JamHub
                 ways to make typical workflows faster, like directory mounting over NFS. Also, these are raw file
                 measurements, meaning no previous versions are uploaded or downloaded (which is to Git's advantage).
             </p>
@@ -224,7 +224,7 @@
                                 <td class="Benchmark-tableData">47.616s</td>
                             </tr>
                             <tr class="Benchmark-tableRow">
-                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableDataFirst">JamHub</td>
                                 <td class="Benchmark-tableData">8.357s</td>
                                 <td class="Benchmark-tableData">4.265s</td>
                             </tr>
@@ -250,7 +250,7 @@
                                 <td class="Benchmark-tableData">5m18.194s</td>
                             </tr>
                             <tr class="Benchmark-tableRow">
-                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableDataFirst">JamHub</td>
                                 <td class="Benchmark-tableData">56.401s</td>
                                 <td class="Benchmark-tableData">28.531s</td>
                             </tr>
@@ -277,7 +277,7 @@
                                 <td class="Benchmark-tableData">1m52.665s</td>
                             </tr>
                             <tr class="Benchmark-tableRow">
-                                <td class="Benchmark-tableDataFirst">Jamhub</td>
+                                <td class="Benchmark-tableDataFirst">JamHub</td>
                                 <td class="Benchmark-tableData">11m0.868s</td>
                                 <td class="Benchmark-tableData">4m39.101s</td>
                             </tr>
@@ -286,22 +286,22 @@
                 </li>
             </ul>
 
-            Measurements from Jamhub hosted in us-west-2 from Seattle and measurements from Git repositories hosted by
+            Measurements from JamHub hosted in us-west-2 from Seattle and measurements from Git repositories hosted by
             Github. Obviously, there are more operations
             that matter in version control than just uploading and downloading an entire repository, but this is just a
             demonstration to show what improvements can be made in our current systems.
             </p>
             <h2 id="algorithm">Algorithm</h2>
             <p class="About-description">
-                The idea behind Jamhub based off of the <a
+                The idea behind JamHub based off of the <a
                     href="https://www.andrew.cmu.edu/course/15-749/READINGS/required/cas/tridgell96.pdf">rsync
                     algorithm</a> and <a
                     href="https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia">Content Defined
                     Chunking (CDC)</a>. If you haven't read these, I would highly recommend them!
             </p>
-            <h3>How Jamhub uses Rsync and CDC</h3>
+            <h3>How JamHub uses Rsync and CDC</h3>
             <p class="About-description">
-                The main idea behind Jamhub is that we can store the operations sent by the sender in an rsync-like
+                The main idea behind JamHub is that we can store the operations sent by the sender in an rsync-like
                 stream to track changes to
                 a file. This means we treat
                 rsync operations like a delta chain that we can use later to regenerate the file. The storage of deltas
@@ -335,7 +335,7 @@
             </p>
             <h3>Implementation</h3>
             <p class="About-description">
-                Jamhub is being written from scratch in <a href="https://go.dev/">Golang</a> and uses <a
+                JamHub is being written from scratch in <a href="https://go.dev/">Golang</a> and uses <a
                     href="https://github.com/mattn/go-sqlite3">mattn/go-sqlite3</a> to store projects and change
                 information. <a href="https://grpc.io/">gRPC</a> and <a
                     href="https://developers.google.com/protocol-buffers">Protocol buffers</a>

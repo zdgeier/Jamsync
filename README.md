@@ -1,15 +1,15 @@
 ![grapes on a vine](https://jamhub.dev/favicon.svg)
 
-# Jamhub
+# JamHub
 
-[Jamhub](https://jamhub.dev) is an open-source version control system for game
+[JamHub](https://jamhub.dev) is an open-source version control system for game
 development. We're building an open-source alternative to Perforce using
 [Go](https://go.dev) and
 [Content Defined Chunking (CDC)](https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia)
 techniques. Join the [Discord](https://discord.gg/6bK3GPKhpa) for questions or
 email me at [zach@jamhub.dev](zach@jamhub.dev).
 
-Jamhub aims to solve the problems game developers have with currently available
+JamHub aims to solve the problems game developers have with currently available
 version control systems. Perforce, which is widely used in the gamedev industry,
 is closed-source, expensive and complicated. Open-source solutions like
 Git/GitLFS and SVN do not scale for large projects with large files. They are
@@ -20,7 +20,7 @@ systems.
 
 ## Algorithm
 
-Jamhub is based off the
+JamHub is based off the
 [rsync algorithm](https://www.andrew.cmu.edu/course/15-749/READINGS/required/cas/tridgell96.pdf)
 and
 [FastCDC](https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia)
@@ -39,9 +39,9 @@ on every byte in the "no match" case. CDC bases the block boundaries on the
 content of the file, so insertions and deletions do not affect the boundaries of
 other blocks.
 
-### How Jamhub uses CDC
+### How JamHub uses CDC
 
-The main idea behind Jamhub is that blocks sent during the CDC syncing process
+The main idea behind JamHub is that blocks sent during the CDC syncing process
 can be used to track changes to a file. When changes are made locally, the
 blocks that are changed or reused can be logged by a server. Essentially, this
 creates a delta each time a push is made and we can use the delta to regenerate
@@ -59,7 +59,7 @@ However, there are several advantages of using chunks over a delta approach.
 
 These two advantages are particularly useful when storing large files. Unlike
 Git's approach of storing the entire history of a file locally, which can get
-large over time, Jamhub stores only the blocks that have changed over time on
+large over time, JamHub stores only the blocks that have changed over time on
 the server so local storage never increases in size. Also, we do not have to
 cache the entire file to make the regeneration length small, since pointers can
 jump directly to the data. This is also an improvement over GitLFS which stores
@@ -91,7 +91,7 @@ with 16GB-sized files) but should be there in the next couple months.
 
 ### Implementation
 
-Jamhub is being written from scratch in [Golang](https://go.dev/) and uses
+JamHub is being written from scratch in [Golang](https://go.dev/) and uses
 [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) to store projects and
 change information. [gRPC](https://grpc.io/) and
 [Protocol buffers](https://developers.google.com/protocol-buffers) are used for
@@ -99,7 +99,7 @@ service definitions and data serialization.
 
 ## Current Status
 
-Jamhub is currently in development. You can currently push, pull, checkout
+JamHub is currently in development. You can currently push, pull, checkout
 branches, and merge branches. Over the next few months we'll be adding features
 to make this usable for regular development. The following features are planned:
 
@@ -117,7 +117,7 @@ discussion or email me at [zach@jamhub.dev](mailto:zach@jamhub.dev).
 
 ### Setup
 
-Note that this is for setting up development or compiling Jamhub yourself. If
+Note that this is for setting up development or compiling JamHub yourself. If
 you want binaries and installation instructions go to
 [jamhub.dev/login](https://jamhub.dev). Documentation for self-hosting is
 going to be pretty sparse right now, but reach out on
@@ -131,7 +131,7 @@ errors/dependencies that occur.
 
 ### Architecture
 
-As a general overview there are three services that currently compose Jamhub --
+As a general overview there are three services that currently compose JamHub --
 web, server, client.
 
 1. Web - runs the REST API and website
@@ -146,7 +146,7 @@ currently stored in the `jb/` directory where the server is started.
 ## Contributing
 
 Although I welcome contributions, I ask that you DM me first before making
-changes so you don't waste time unless it's a small bug. Jamhub is early in
+changes so you don't waste time unless it's a small bug. JamHub is early in
 development so things could change drastically.
 
 ## Contact
