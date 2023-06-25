@@ -35,8 +35,8 @@ func main() {
 		jam.Merge()
 	case os.Args[1] == "checkout":
 		jam.Checkout()
-	case os.Args[1] == "branches":
-		jam.ListBranches()
+	case os.Args[1] == "workspaces":
+		jam.ListWorkspaces()
 	case os.Args[1] == "projects":
 		jam.ListProjects()
 	case os.Args[1] == "logout":

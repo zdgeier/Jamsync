@@ -1,4 +1,4 @@
-package branchfiles
+package workspacefiles
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ func Handler(ctx *gin.Context) {
 	type templateParams struct {
 		Email interface{}
 	}
-	ctx.HTML(http.StatusOK, "branchfiles.html", templateParams{
+	ctx.HTML(http.StatusOK, "workspacefiles.html", templateParams{
 		Email: session.Get("email"),
 	})
 }

@@ -16,7 +16,7 @@ import (
 
 func Checkout() {
 	if len(os.Args) != 3 {
-		fmt.Println("jam checkout <branch name>")
+		fmt.Println("jam checkout <workspace name>")
 		return
 	}
 	authFile, err := authfile.Authorize()
@@ -44,10 +44,10 @@ func Checkout() {
 		os.Exit(0)
 	}
 
-	if state.CommitInfo == nil || state.BranchInfo != nil {
+	if state.CommitInfo == nil || state.WorkspaceInfo != nil {
 		if os.Args[2] == "main" || os.Args[2] == "mainline" {
 			fileMetadata := ReadLocalFileList()
-			localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			localToRemoteDiff, err := DiffLocalToRemoteWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -90,35 +90,35 @@ func Checkout() {
 	}
 
 	if os.Args[2] == "main" || os.Args[2] == "mainline" {
-		fmt.Println("`main` and `mainline` are branch names reserved for commits. Please choose another branch name.")
+		fmt.Println("`main` and `mainline` are workspace names reserved for commits. Please choose another workspace name.")
 		os.Exit(1)
 	}
 
-	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
+	resp, err := apiClient.ListWorkspaces(ctx, &pb.ListWorkspacesRequest{ProjectId: state.ProjectId})
 	if err != nil {
 		panic(err)
 	}
 
-	if branchId, ok := resp.GetBranches()[os.Args[2]]; ok {
-		if branchId == state.BranchInfo.BranchId {
+	if workspaceId, ok := resp.GetWorkspaces()[os.Args[2]]; ok {
+		if workspaceId == state.WorkspaceInfo.WorkspaceId {
 			fmt.Println("Already on", os.Args[2])
 			return
 		}
 
-		changeResp, err := apiClient.GetBranchCurrentChange(context.TODO(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: branchId})
+		changeResp, err := apiClient.GetWorkspaceCurrentChange(context.TODO(), &pb.GetWorkspaceCurrentChangeRequest{ProjectId: state.ProjectId, WorkspaceId: workspaceId})
 		if err != nil {
 			panic(err)
 		}
 
-		// if branch already exists, do a pull
+		// if workspace already exists, do a pull
 		fileMetadata := ReadLocalFileList()
-		remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
+		remoteToLocalDiff, err := DiffRemoteToLocalWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if DiffHasChanges(remoteToLocalDiff) {
-			err = ApplyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+			err = ApplyFileListDiffWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -133,30 +133,30 @@ func Checkout() {
 
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchInfo: &statefile.BranchInfo{
-				BranchId: state.BranchInfo.BranchId,
-				ChangeId: changeResp.ChangeId,
+			WorkspaceInfo: &statefile.WorkspaceInfo{
+				WorkspaceId: state.WorkspaceInfo.WorkspaceId,
+				ChangeId:    changeResp.ChangeId,
 			},
 		}.Save()
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		// otherwise, just create a new branch
-		resp, err := apiClient.CreateBranch(ctx, &pb.CreateBranchRequest{ProjectId: state.ProjectId, BranchName: os.Args[2]})
+		// otherwise, just create a new workspace
+		resp, err := apiClient.CreateWorkspace(ctx, &pb.CreateWorkspaceRequest{ProjectId: state.ProjectId, WorkspaceName: os.Args[2]})
 		if err != nil {
 			log.Panic(err)
 		}
 
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchInfo: &statefile.BranchInfo{
-				BranchId: resp.BranchId,
+			WorkspaceInfo: &statefile.WorkspaceInfo{
+				WorkspaceId: resp.WorkspaceId,
 			},
 		}.Save()
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Switched to new branch", os.Args[2]+".")
+		fmt.Println("Switched to new workspace", os.Args[2]+".")
 	}
 }

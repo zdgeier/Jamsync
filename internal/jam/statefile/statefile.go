@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 )
 
-type BranchInfo struct {
-	BranchId uint64 `json:"branchid"`
-	ChangeId uint64 `json:"changeid"`
+type WorkspaceInfo struct {
+	WorkspaceId uint64 `json:"workspaceid"`
+	ChangeId    uint64 `json:"changeid"`
 }
 
 type CommitInfo struct {
@@ -18,9 +18,9 @@ type CommitInfo struct {
 }
 
 type StateFile struct {
-	ProjectId  uint64 `json:"projectid"`
-	BranchInfo *BranchInfo
-	CommitInfo *CommitInfo
+	ProjectId     uint64 `json:"projectid"`
+	WorkspaceInfo *WorkspaceInfo
+	CommitInfo    *CommitInfo
 }
 
 func (s StateFile) Save() error {

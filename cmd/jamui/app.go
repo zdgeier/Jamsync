@@ -58,16 +58,16 @@ func (a *App) startup(ctx context.Context) {
 // 	return projects
 // }
 
-func (a *App) Checkout(branchName string) string {
+func (a *App) Checkout(workspaceName string) string {
 	state, err := statefile.Find()
 	if err != nil {
 		panic("Could not find a `.jamhub` file. Run `jam init` to initialize the project.")
 	}
 
-	if state.CommitInfo == nil || state.BranchInfo != nil {
-		if branchName == "main" || branchName == "mainline" {
+	if state.CommitInfo == nil || state.WorkspaceInfo != nil {
+		if workspaceName == "main" || workspaceName == "mainline" {
 			fileMetadata := jam.ReadLocalFileList()
-			localToRemoteDiff, err := jam.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			localToRemoteDiff, err := jam.DiffLocalToRemoteWorkspace(a.client, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -106,35 +106,35 @@ func (a *App) Checkout(branchName string) string {
 		}
 	}
 
-	if branchName == "main" || branchName == "mainline" {
-		fmt.Println("`main` and `mainline` are branch names reserved for commits. Please choose another branch name.")
+	if workspaceName == "main" || workspaceName == "mainline" {
+		fmt.Println("`main` and `mainline` are workspace names reserved for commits. Please choose another workspace name.")
 		os.Exit(1)
 	}
 
-	resp, err := a.client.ListBranches(a.ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
+	resp, err := a.client.ListWorkspaces(a.ctx, &pb.ListWorkspacesRequest{ProjectId: state.ProjectId})
 	if err != nil {
 		panic(err)
 	}
 
-	if branchId, ok := resp.GetBranches()[branchName]; ok {
-		if branchId == state.BranchInfo.BranchId {
-			return fmt.Sprintf("%s %s", "Already on", branchName)
+	if workspaceId, ok := resp.GetWorkspaces()[workspaceName]; ok {
+		if workspaceId == state.WorkspaceInfo.WorkspaceId {
+			return fmt.Sprintf("%s %s", "Already on", workspaceName)
 		}
 
-		changeResp, err := a.client.GetBranchCurrentChange(context.TODO(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: branchId})
+		changeResp, err := a.client.GetWorkspaceCurrentChange(context.TODO(), &pb.GetWorkspaceCurrentChangeRequest{ProjectId: state.ProjectId, WorkspaceId: workspaceId})
 		if err != nil {
 			panic(err)
 		}
 
-		// if branch already exists, do a pull
+		// if workspace already exists, do a pull
 		fileMetadata := jam.ReadLocalFileList()
-		remoteToLocalDiff, err := jam.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, fileMetadata)
+		remoteToLocalDiff, err := jam.DiffRemoteToLocalWorkspace(a.client, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.ChangeId, fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if jam.DiffHasChanges(remoteToLocalDiff) {
-			err = jam.ApplyFileListDiffBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, changeResp.ChangeId, remoteToLocalDiff)
+			err = jam.ApplyFileListDiffWorkspace(a.client, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.ChangeId, remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -149,9 +149,9 @@ func (a *App) Checkout(branchName string) string {
 
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchInfo: &statefile.BranchInfo{
-				BranchId: state.BranchInfo.BranchId,
-				ChangeId: changeResp.ChangeId,
+			WorkspaceInfo: &statefile.WorkspaceInfo{
+				WorkspaceId: state.WorkspaceInfo.WorkspaceId,
+				ChangeId:    changeResp.ChangeId,
 			},
 		}.Save()
 		if err != nil {
@@ -160,22 +160,22 @@ func (a *App) Checkout(branchName string) string {
 		return ""
 	}
 
-	// otherwise, just create a new branch
-	createResp, err := a.client.CreateBranch(a.ctx, &pb.CreateBranchRequest{ProjectId: state.ProjectId, BranchName: branchName})
+	// otherwise, just create a new workspace
+	createResp, err := a.client.CreateWorkspace(a.ctx, &pb.CreateWorkspaceRequest{ProjectId: state.ProjectId, WorkspaceName: workspaceName})
 	if err != nil {
 		log.Panic(err)
 	}
 
 	err = statefile.StateFile{
 		ProjectId: state.ProjectId,
-		BranchInfo: &statefile.BranchInfo{
-			BranchId: createResp.BranchId,
+		WorkspaceInfo: &statefile.WorkspaceInfo{
+			WorkspaceId: createResp.WorkspaceId,
 		},
 	}.Save()
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprint("Switched to new branch ", branchName, ".")
+	return fmt.Sprint("Switched to new workspace ", workspaceName, ".")
 }
 
 func (a *App) ProjectExists(projectName string) bool {
@@ -244,32 +244,32 @@ func (a *App) GetInfo() []string {
 	}
 	res = append(res, fmt.Sprintf("Project: %s\n", nameResp.ProjectName))
 
-	if state.BranchInfo != nil {
-		branchNameResp, err := a.client.GetBranchName(context.Background(), &pb.GetBranchNameRequest{
-			ProjectId: state.ProjectId,
-			BranchId:  state.BranchInfo.BranchId,
+	if state.WorkspaceInfo != nil {
+		workspaceNameResp, err := a.client.GetWorkspaceName(context.Background(), &pb.GetWorkspaceNameRequest{
+			ProjectId:   state.ProjectId,
+			WorkspaceId: state.WorkspaceInfo.WorkspaceId,
 		})
 		if err != nil {
 			panic(err)
 		}
 		res = append(res, fmt.Sprintf(
-			"Branch:  %s\n",
-			branchNameResp.GetBranchName(),
+			"Workspace:  %s\n",
+			workspaceNameResp.GetWorkspaceName(),
 		))
 
 		res = append(res, fmt.Sprintf(
 			"Change:  %d\n",
-			state.BranchInfo.ChangeId,
+			state.WorkspaceInfo.ChangeId,
 		))
 
-		changeResp, err := a.client.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchInfo.BranchId})
+		changeResp, err := a.client.GetWorkspaceCurrentChange(context.Background(), &pb.GetWorkspaceCurrentChangeRequest{ProjectId: state.ProjectId, WorkspaceId: state.WorkspaceInfo.WorkspaceId})
 		if err != nil {
 			panic(err)
 		}
 
-		if changeResp.ChangeId == state.BranchInfo.ChangeId {
+		if changeResp.ChangeId == state.WorkspaceInfo.ChangeId {
 			fileMetadata := jam.ReadLocalFileList()
-			localToRemoteDiff, err := jam.DiffLocalToRemoteBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			localToRemoteDiff, err := jam.DiffLocalToRemoteWorkspace(a.client, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -284,9 +284,9 @@ func (a *App) GetInfo() []string {
 			} else {
 				res = append(res, "\nNo local or remote changes.")
 			}
-		} else if changeResp.ChangeId > state.BranchInfo.ChangeId {
+		} else if changeResp.ChangeId > state.WorkspaceInfo.ChangeId {
 			fileMetadata := jam.ReadLocalFileList()
-			remoteToLocalDiff, err := jam.DiffRemoteToLocalBranch(a.client, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			remoteToLocalDiff, err := jam.DiffRemoteToLocalWorkspace(a.client, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}

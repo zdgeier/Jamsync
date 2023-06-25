@@ -41,21 +41,21 @@ func setup() (pb.JamHubClient, func(), error) {
 	return jamhubgrpc.Connect(&oauth2.Token{AccessToken: ""})
 }
 
-func TestClient_UploadDownloadBranchFile(t *testing.T) {
+func TestClient_UploadDownloadWorkspaceFile(t *testing.T) {
 	ctx := context.Background()
 
 	apiClient, closer, err := setup()
 	require.NoError(t, err)
 	defer closer()
 
-	projectName := "UploadDownloadBranchFile"
+	projectName := "UploadDownloadWorkspaceFile"
 
 	addProjectResp, err := apiClient.AddProject(context.Background(), &pb.AddProjectRequest{
 		ProjectName: projectName,
 	})
 	require.NoError(t, err)
 
-	resp, err := apiClient.CreateBranch(ctx, &pb.CreateBranchRequest{ProjectId: addProjectResp.ProjectId, BranchName: os.Args[2]})
+	resp, err := apiClient.CreateWorkspace(ctx, &pb.CreateWorkspaceRequest{ProjectId: addProjectResp.ProjectId, WorkspaceName: os.Args[2]})
 	if err != nil {
 		log.Panic(err)
 	}
@@ -105,11 +105,11 @@ func TestClient_UploadDownloadBranchFile(t *testing.T) {
 	var changeId uint64
 	for _, fileOperation := range fileOperations {
 		t.Run(fileOperation.name, func(t *testing.T) {
-			err = uploadBranchFile(apiClient, addProjectResp.ProjectId, resp.BranchId, changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data))
+			err = uploadWorkspaceFile(apiClient, addProjectResp.ProjectId, resp.WorkspaceId, changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data))
 			require.NoError(t, err)
 
 			result := new(bytes.Buffer)
-			err = file.DownloadBranchFile(apiClient, addProjectResp.ProjectId, resp.BranchId, changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data), result)
+			err = file.DownloadWorkspaceFile(apiClient, addProjectResp.ProjectId, resp.WorkspaceId, changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data), result)
 
 			require.NoError(t, err)
 			require.Equal(t, fileOperation.data, result.Bytes())
@@ -133,80 +133,80 @@ func TestClient_UploadDownloadMergedFile(t *testing.T) {
 	require.NoError(t, err)
 
 	fileOperations := []struct {
-		name       string
-		filePath   string
-		data       []byte
-		branchName string
-		changeId   uint64
+		name          string
+		filePath      string
+		data          []byte
+		workspaceName string
+		changeId      uint64
 	}{
 		{
-			name:       "test1",
-			filePath:   "test",
-			data:       []byte("this is a test!"),
-			branchName: "test1",
-			changeId:   0,
+			name:          "test1",
+			filePath:      "test",
+			data:          []byte("this is a test!"),
+			workspaceName: "test1",
+			changeId:      0,
 		},
 		{
-			name:       "test2",
-			filePath:   "test2",
-			branchName: "test2",
-			data:       []byte("this is a test!"),
-			changeId:   0,
+			name:          "test2",
+			filePath:      "test2",
+			workspaceName: "test2",
+			data:          []byte("this is a test!"),
+			changeId:      0,
 		},
 		{
-			name:       "new path",
-			filePath:   "this/is/a/path.txt",
-			branchName: "test3",
-			data:       []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!"),
-			changeId:   0,
+			name:          "new path",
+			filePath:      "this/is/a/path.txt",
+			workspaceName: "test3",
+			data:          []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!"),
+			changeId:      0,
 		},
 		{
-			name:       "reused path1",
-			filePath:   "this/is/a/path.txt",
-			branchName: "test4",
-			data:       []byte("xthis is a test!this is a test!this is a test!this is a test!this is a test!this is a test!"),
-			changeId:   0,
+			name:          "reused path1",
+			filePath:      "this/is/a/path.txt",
+			workspaceName: "test4",
+			data:          []byte("xthis is a test!this is a test!this is a test!this is a test!this is a test!this is a test!"),
+			changeId:      0,
 		},
 		{
-			name:       "reused path2",
-			filePath:   "this/is/a/path.txt",
-			branchName: "test5",
-			data:       []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!x"),
-			changeId:   0,
+			name:          "reused path2",
+			filePath:      "this/is/a/path.txt",
+			workspaceName: "test5",
+			data:          []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!x"),
+			changeId:      0,
 		},
 		{
-			name:       "reused path3",
-			filePath:   "this/is/a/path.txt",
-			branchName: "test6",
-			data:       []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!!this is a test!"),
-			changeId:   0,
+			name:          "reused path3",
+			filePath:      "this/is/a/path.txt",
+			workspaceName: "test6",
+			data:          []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!!this is a test!"),
+			changeId:      0,
 		},
 		{
-			name:       "reused path4",
-			filePath:   "this/is/a/path.txt",
-			branchName: "test7",
-			data:       []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!!this is a test!"),
-			changeId:   0,
+			name:          "reused path4",
+			filePath:      "this/is/a/path.txt",
+			workspaceName: "test7",
+			data:          []byte("this is a test!this is a test!this is a test!this is a test!this is a test!this is a test!!this is a test!"),
+			changeId:      0,
 		},
 	}
 
 	for _, fileOperation := range fileOperations {
 		t.Run(fileOperation.name, func(t *testing.T) {
-			resp, err := apiClient.CreateBranch(ctx, &pb.CreateBranchRequest{ProjectId: addProjectResp.ProjectId, BranchName: fileOperation.branchName})
+			resp, err := apiClient.CreateWorkspace(ctx, &pb.CreateWorkspaceRequest{ProjectId: addProjectResp.ProjectId, WorkspaceName: fileOperation.workspaceName})
 			if err != nil {
 				log.Panic(err)
 			}
 
-			err = uploadBranchFile(apiClient, addProjectResp.ProjectId, resp.BranchId, fileOperation.changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data))
+			err = uploadWorkspaceFile(apiClient, addProjectResp.ProjectId, resp.WorkspaceId, fileOperation.changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data))
 			require.NoError(t, err)
 
 			result := new(bytes.Buffer)
-			err = file.DownloadBranchFile(apiClient, addProjectResp.ProjectId, resp.BranchId, fileOperation.changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data), result)
+			err = file.DownloadWorkspaceFile(apiClient, addProjectResp.ProjectId, resp.WorkspaceId, fileOperation.changeId, fileOperation.filePath, bytes.NewReader(fileOperation.data), result)
 
 			require.NoError(t, err)
 			require.Equal(t, fileOperation.data, result.Bytes())
 
-			mergeResp, err := apiClient.MergeBranch(ctx, &pb.MergeBranchRequest{ProjectId: addProjectResp.ProjectId, BranchId: resp.BranchId})
+			mergeResp, err := apiClient.MergeWorkspace(ctx, &pb.MergeWorkspaceRequest{ProjectId: addProjectResp.ProjectId, WorkspaceId: resp.WorkspaceId})
 			if err != nil {
 				log.Panic(err)
 			}

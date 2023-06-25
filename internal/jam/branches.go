@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func ListBranches() {
+func ListWorkspaces() {
 	authFile, err := authfile.Authorize()
 	if err != nil {
 		panic(err)
@@ -40,12 +40,12 @@ func ListBranches() {
 		os.Exit(0)
 	}
 
-	resp, err := apiClient.ListBranches(ctx, &pb.ListBranchesRequest{ProjectId: state.ProjectId})
+	resp, err := apiClient.ListWorkspaces(ctx, &pb.ListWorkspacesRequest{ProjectId: state.ProjectId})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	for name := range resp.GetBranches() {
+	for name := range resp.GetWorkspaces() {
 		fmt.Println(name)
 	}
 }

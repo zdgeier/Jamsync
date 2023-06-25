@@ -7,10 +7,10 @@
         <div class="FilesHeader">
             <h1 id="projectname"></h1>
             <span>
-                <select id="branches" class="FilesHeader-branchSelect is-hidden">
+                <select id="workspaces" class="FilesHeader-workspaceSelect is-hidden">
                 </select>
-                <p id="no-branches" class="is-hidden">
-                    No branches
+                <p id="no-workspaces" class="is-hidden">
+                    No workspaces
                 </p>
             </span>
         </div>
@@ -26,11 +26,11 @@
         let splitPath = window.location.pathname.split("/");
         let projectUrl =  splitPath.slice(0, 5).join('/');
         let projectName = splitPath[2];
-        let currBranchId = splitPath[4];
+        let currWorkspaceId = splitPath[4];
 
         async function updateFilesTable() {
             const queryParams = new URLSearchParams(window.location.search);
-            const selectEl = document.getElementById("branches");
+            const selectEl = document.getElementById("workspaces");
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
@@ -93,25 +93,25 @@
             allFilesTempEl.classList.remove("is-hidden");
         }
 
-        async function branches() {
+        async function workspaces() {
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
-            let branchesResp = await fetch(`/api/projects/${projectName}/branches`);
-            let branchesJson = await branchesResp.json();
+            let workspacesResp = await fetch(`/api/projects/${projectName}/workspaces`);
+            let workspacesJson = await workspacesResp.json();
 
-            let selectEl = document.getElementById("branches");
+            let selectEl = document.getElementById("workspaces");
             selectEl.innerHTML = "";
-            let noBranches = document.getElementById("no-branches");
-            for (const branchName in branchesJson.branches) {
+            let noWorkspaces = document.getElementById("no-workspaces");
+            for (const workspaceName in workspacesJson.workspaces) {
                 let optionEl = document.createElement("option");
-                optionEl.innerHTML = branchName;
-                optionEl.setAttribute("value", branchName);
+                optionEl.innerHTML = workspaceName;
+                optionEl.setAttribute("value", workspaceName);
                 selectEl.appendChild(optionEl);
                 selectEl.classList.remove("is-hidden");
             }
             if (selectEl.classList.contains("is-hidden")) {
-                noBranches.classList.remove("is-hidden");
+                noWorkspaces.classList.remove("is-hidden");
                 return
             }
             let optionEl = document.createElement("option");
@@ -126,23 +126,23 @@
                     window.location.href = `${projectUrl}/committedfiles/${currentPath}`;
                 } else {
                     let projectName = splitPath[2];
-                    let currBranchId = splitPath[4];
-                    window.location.href = `${projectUrl}/branchfiles/${selectEl.value}/${currentPath}`;
+                    let currWorkspaceId = splitPath[4];
+                    window.location.href = `${projectUrl}/workspacefiles/${selectEl.value}/${currentPath}`;
                 }
             });
         }
-        branches()
+        workspaces()
 
         let currentPath = splitPath.slice(5).join('/');
         let projectNameEl = document.getElementById("projectname");
         projectNameEl.innerHTML = "$ " + projectName + "/" + currentPath;
 
         const queryParams = new URLSearchParams(window.location.search);
-        let branchName = queryParams.get("branchName") ?? "";
+        let workspaceName = queryParams.get("workspaceName") ?? "";
 
 
         window.addEventListener('pageshow', (event) => {
-            branches()
+            workspaces()
             updateFilesTable()
         });
         updateFilesTable()

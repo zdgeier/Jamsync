@@ -1,4 +1,4 @@
-package branchfile
+package workspacefile
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ func Handler(ctx *gin.Context) {
 		Email  interface{}
 		IsProd bool
 	}
-	ctx.HTML(http.StatusOK, "branchfile.html", templateParams{
+	ctx.HTML(http.StatusOK, "workspacefile.html", templateParams{
 		Email:  session.Get("email"),
 		IsProd: jamenv.Env() == jamenv.Prod,
 	})

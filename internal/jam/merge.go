@@ -34,12 +34,12 @@ func Merge() {
 	defer closer()
 
 	if state.CommitInfo != nil {
-		fmt.Println("Currently on a commit, checkout a branch with `jam checkout <branchname>` to push changes.")
+		fmt.Println("Currently on a commit, checkout a workspace with `jam checkout <workspacename>` to push changes.")
 		os.Exit(1)
 	}
 
 	fileMetadata := ReadLocalFileList()
-	remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+	remoteToLocalDiff, err := DiffRemoteToLocalWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -49,17 +49,17 @@ func Merge() {
 		return
 	}
 
-	resp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
-		ProjectId: state.ProjectId,
-		BranchId:  state.BranchInfo.BranchId,
+	resp, err := apiClient.MergeWorkspace(context.Background(), &pb.MergeWorkspaceRequest{
+		ProjectId:   state.ProjectId,
+		WorkspaceId: state.WorkspaceInfo.WorkspaceId,
 	})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	_, err = apiClient.DeleteBranch(context.Background(), &pb.DeleteBranchRequest{
-		ProjectId: state.ProjectId,
-		BranchId:  state.BranchInfo.BranchId,
+	_, err = apiClient.DeleteWorkspace(context.Background(), &pb.DeleteWorkspaceRequest{
+		ProjectId:   state.ProjectId,
+		WorkspaceId: state.WorkspaceInfo.WorkspaceId,
 	})
 	if err != nil {
 		log.Panic(err)

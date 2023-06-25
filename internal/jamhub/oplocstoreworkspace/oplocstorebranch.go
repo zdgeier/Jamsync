@@ -1,4 +1,4 @@
-package oplocstorebranch
+package oplocstoreworkspace
 
 import (
 	"bytes"
@@ -21,15 +21,15 @@ type LocalOpLocStore struct {
 	mu    sync.Mutex
 }
 
-func (s *LocalOpLocStore) filePath(ownerId string, projectId, branchId, changeId uint64, pathHash []byte) string {
-	return fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d/%d/%02X/%02X.locs", ownerId, projectId, branchId, changeId, pathHash[:1], pathHash)
+func (s *LocalOpLocStore) filePath(ownerId string, projectId, workspaceId, changeId uint64, pathHash []byte) string {
+	return fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d/%d/%02X/%02X.locs", ownerId, projectId, workspaceId, changeId, pathHash[:1], pathHash)
 }
 
-func (s *LocalOpLocStore) fileDir(ownerId string, projectId, branchId, changeId uint64, pathHash []byte) string {
-	return fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d/%d/%02X", ownerId, projectId, branchId, changeId, pathHash[:1])
+func (s *LocalOpLocStore) fileDir(ownerId string, projectId, workspaceId, changeId uint64, pathHash []byte) string {
+	return fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d/%d/%02X", ownerId, projectId, workspaceId, changeId, pathHash[:1])
 }
 
-func NewOpLocStoreBranch() *LocalOpLocStore {
+func NewOpLocStoreWorkspace() *LocalOpLocStore {
 	cache, err := lru.NewWithEvict(2048, func(path string, file *os.File) {
 		err := file.Close()
 		if err != nil {
@@ -45,16 +45,16 @@ func NewOpLocStoreBranch() *LocalOpLocStore {
 	}
 }
 
-func (s *LocalOpLocStore) InsertOperationLocations(opLocs *pb.BranchOperationLocations) error {
+func (s *LocalOpLocStore) InsertOperationLocations(opLocs *pb.WorkspaceOperationLocations) error {
 	var (
 		currFile *os.File
 		err      error
 	)
-	err = os.MkdirAll(s.fileDir(opLocs.GetOwnerId(), opLocs.GetProjectId(), opLocs.GetBranchId(), opLocs.GetChangeId(), opLocs.GetPathHash()), os.ModePerm)
+	err = os.MkdirAll(s.fileDir(opLocs.GetOwnerId(), opLocs.GetProjectId(), opLocs.GetWorkspaceId(), opLocs.GetChangeId(), opLocs.GetPathHash()), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	filePath := s.filePath(opLocs.GetOwnerId(), opLocs.GetProjectId(), opLocs.GetBranchId(), opLocs.GetChangeId(), opLocs.GetPathHash())
+	filePath := s.filePath(opLocs.GetOwnerId(), opLocs.GetProjectId(), opLocs.GetWorkspaceId(), opLocs.GetChangeId(), opLocs.GetPathHash())
 	if s.cache.Contains(filePath) {
 		currFile, _ = s.cache.Get(filePath)
 	} else {
@@ -74,8 +74,8 @@ func (s *LocalOpLocStore) InsertOperationLocations(opLocs *pb.BranchOperationLoc
 	return err
 }
 
-func (s *LocalOpLocStore) ListOperationLocations(ownerId string, projectId, branchId, changeId uint64, pathHash []byte) (opLocs *pb.BranchOperationLocations, err error) {
-	filePath := s.filePath(ownerId, projectId, branchId, changeId, pathHash)
+func (s *LocalOpLocStore) ListOperationLocations(ownerId string, projectId, workspaceId, changeId uint64, pathHash []byte) (opLocs *pb.WorkspaceOperationLocations, err error) {
+	filePath := s.filePath(ownerId, projectId, workspaceId, changeId, pathHash)
 	_, err = os.Stat(filePath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
 		return nil, nil
@@ -101,19 +101,19 @@ func (s *LocalOpLocStore) ListOperationLocations(ownerId string, projectId, bran
 	}
 	s.mu.Unlock()
 
-	opLocs = &pb.BranchOperationLocations{}
+	opLocs = &pb.WorkspaceOperationLocations{}
 	err = proto.Unmarshal(buf.Bytes(), opLocs)
 	return opLocs, err
 }
 
-func (s *LocalOpLocStore) MaxChangeId(ownerId string, projectId, branchId uint64) (uint64, error) {
-	branchDir := fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d", ownerId, projectId, branchId)
-	_, err := os.Stat(branchDir)
+func (s *LocalOpLocStore) MaxChangeId(ownerId string, projectId, workspaceId uint64) (uint64, error) {
+	workspaceDir := fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d", ownerId, projectId, workspaceId)
+	_, err := os.Stat(workspaceDir)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
 		return 0, nil
 	}
 
-	files, err := ioutil.ReadDir(fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d", ownerId, projectId, branchId))
+	files, err := ioutil.ReadDir(fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d", ownerId, projectId, workspaceId))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -132,17 +132,17 @@ func (s *LocalOpLocStore) MaxChangeId(ownerId string, projectId, branchId uint64
 }
 
 func (s *LocalOpLocStore) DeleteProject(ownerId string, projectId uint64) error {
-	return os.RemoveAll(fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch", ownerId, projectId))
+	return os.RemoveAll(fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace", ownerId, projectId))
 }
 
-func (s *LocalOpLocStore) DeleteBranch(ownerId string, projectId uint64, branchId uint64) error {
-	dirs, err := ioutil.ReadDir(fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d", ownerId, projectId, branchId))
+func (s *LocalOpLocStore) DeleteWorkspace(ownerId string, projectId uint64, workspaceId uint64) error {
+	dirs, err := ioutil.ReadDir(fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d", ownerId, projectId, workspaceId))
 	if err != nil {
 		return err
 	}
 
 	for _, dir := range dirs {
-		err := os.RemoveAll(fmt.Sprintf("jamhubdata/%s/%d/oplocstorebranch/%d/%s", ownerId, projectId, branchId, dir.Name()))
+		err := os.RemoveAll(fmt.Sprintf("jamhubdata/%s/%d/oplocstoreworkspace/%d/%s", ownerId, projectId, workspaceId, dir.Name()))
 		if err != nil {
 			return err
 		}

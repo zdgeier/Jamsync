@@ -94,7 +94,7 @@ func (s JamHub) DeleteProject(ctx context.Context, in *pb.DeleteProjectRequest) 
 	if err != nil {
 		return nil, err
 	}
-	err = s.oplocstorebranch.DeleteProject(id, projectId)
+	err = s.oplocstoreworkspace.DeleteProject(id, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s JamHub) DeleteProject(ctx context.Context, in *pb.DeleteProjectRequest) 
 	if err != nil {
 		return nil, err
 	}
-	err = s.opdatastorebranch.DeleteProject(id, projectId)
+	err = s.opdatastoreworkspace.DeleteProject(id, projectId)
 	if err != nil {
 		return nil, err
 	}

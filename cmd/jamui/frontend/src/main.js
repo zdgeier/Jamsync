@@ -55,10 +55,10 @@ document.getElementById("screen-init-new-project-path-dialog").addEventListener(
     document.getElementById("screen-init-new-project-status").innerHTML = "";
 });
 
-document.getElementById("screen-project-status-branch-submit").addEventListener("click", async () => {
-    const branchName = document.getElementById("screen-project-status-branch-name").value;
-    const result = await Checkout(branchName);
-    document.getElementById("screen-project-status-branch-info").innerHTML = result;
+document.getElementById("screen-project-status-workspace-submit").addEventListener("click", async () => {
+    const workspaceName = document.getElementById("screen-project-status-workspace-name").value;
+    const result = await Checkout(workspaceName);
+    document.getElementById("screen-project-status-workspace-info").innerHTML = result;
 });
 
 

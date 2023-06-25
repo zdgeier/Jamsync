@@ -67,7 +67,7 @@ func DownloadCommittedFile(client pb.JamHubClient, projectId uint64, commitId ui
 	return err
 }
 
-func DownloadBranchFile(client pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, filePath string, localReader io.ReadSeeker, localWriter io.Writer) error {
+func DownloadWorkspaceFile(client pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, filePath string, localReader io.ReadSeeker, localWriter io.Writer) error {
 	sig := make([]*pb.ChunkHash, 0)
 	localChunker, err := fastcdc.NewChunker(localReader, fastcdc.Options{
 		AverageSize: 1024 * 64,
@@ -85,9 +85,9 @@ func DownloadBranchFile(client pb.JamHubClient, projectId uint64, branchId uint6
 		return err
 	}
 
-	stream, err := client.ReadBranchFile(context.TODO(), &pb.ReadBranchFileRequest{
+	stream, err := client.ReadWorkspaceFile(context.TODO(), &pb.ReadWorkspaceFileRequest{
 		ProjectId:   projectId,
-		BranchId:    branchId,
+		WorkspaceId: workspaceId,
 		ChangeId:    changeId,
 		PathHash:    pathToHash(filePath),
 		ModTime:     timestamppb.Now(),

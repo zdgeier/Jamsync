@@ -72,16 +72,16 @@ development.
 
 - Mainline - The production history of the project. Made up of a series of
   "commits" that represent good versions of the project.
-- Branch - A workspace for developers to make changes in. Developers will make
-  "changes" in their branch and merge into the "mainline" when approved/ready.
-  "Changes" will be tracked while in the branch, but will be squashed into a
+- Workspace - A workspace for developers to make changes in. Developers will make
+  "changes" in their workspace and merge into the "mainline" when approved/ready.
+  "Changes" will be tracked while in the workspace, but will be squashed into a
   single "commit" when merged into the mainline. Eventually, changes will be
-  able to be synced live between local developer machine and their branch.
-- Change - A modification of a branch while developers are working on their
+  able to be synced live between local developer machine and their workspace.
+- Change - A modification of a workspace while developers are working on their
   project, made by doing a `jam push`.
 - Commit - A modification of the production version of the project, made by
-  merging in a "branch".
-- Merge - Occurs when a branch is squashed and committed to the "mainline".
+  merging in a "workspace".
+- Merge - Occurs when a workspace is squashed and committed to the "mainline".
 
 ### Limitations
 
@@ -100,7 +100,7 @@ service definitions and data serialization.
 ## Current Status
 
 JamHub is currently in development. You can currently push, pull, checkout
-branches, and merge branches. Over the next few months we'll be adding features
+workspaces, and merge workspaces. Over the next few months we'll be adding features
 to make this usable for regular development. The following features are planned:
 
 - Multi-person project collaboration

@@ -17,8 +17,6 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamenv"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/api"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/authenticator"
-	"github.com/zdgeier/jamhub/internal/jamhubweb/branchfile"
-	"github.com/zdgeier/jamhub/internal/jamhubweb/branchfiles"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/callback"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/committedfile"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/committedfiles"
@@ -27,6 +25,8 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamhubweb/logout"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/middleware"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/userprojects"
+	"github.com/zdgeier/jamhub/internal/jamhubweb/workspacefile"
+	"github.com/zdgeier/jamhub/internal/jamhubweb/workspacefiles"
 )
 
 type templateParams struct {
@@ -129,19 +129,19 @@ func New(auth *authenticator.Authenticator) http.Handler {
 
 	router.GET("/api/userprojects", api.UserProjectsHandler())
 	router.GET("/api/projects/:projectName", api.GetProjectCurrentCommitHandler())
-	router.GET("/api/projects/:projectName/branches", api.GetBranchesHandler())
-	router.GET("/api/projects/:projectName/branches/:branchName", api.GetBranchInfoHandler())
+	router.GET("/api/projects/:projectName/workspaces", api.GetWorkspacesHandler())
+	router.GET("/api/projects/:projectName/workspaces/:workspaceName", api.GetWorkspaceInfoHandler())
 	router.GET("/api/projects/:projectName/committedfiles/:commitId/*path", api.ProjectBrowseCommitHandler())
 	router.GET("/api/projects/:projectName/committedfile/:commitId/*path", api.GetFileCommitHandler())
-	router.GET("/api/projects/:projectName/branchfiles/:branchId/:changeId/*path", api.ProjectBrowseBranchHandler())
-	router.GET("/api/projects/:projectName/branchfile/:branchId/:changeId/*path", api.GetFileBranchHandler())
+	router.GET("/api/projects/:projectName/workspacefiles/:workspaceId/:changeId/*path", api.ProjectBrowseWorkspaceHandler())
+	router.GET("/api/projects/:projectName/workspacefile/:workspaceId/:changeId/*path", api.GetFileWorkspaceHandler())
 
 	router.POST("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.CreateHandler)
 	router.GET("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.Handler)
-	router.GET("/:username/:project/branchfile/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, branchfile.Handler)
+	router.GET("/:username/:project/workspacefile/:workspaceName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, workspacefile.Handler)
 	router.GET("/:username/:project/committedfile/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfile.Handler)
 	router.GET("/:username/:project/committedfiles/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfiles.Handler)
-	router.GET("/:username/:project/branchfiles/:branchName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, branchfiles.Handler)
+	router.GET("/:username/:project/workspacefiles/:workspaceName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, workspacefiles.Handler)
 	router.GET("/download", middleware.IsAuthenticated, middleware.Reauthenticate, download.Handler)
 	return MaxAge(handlers.CompressHandler(router))
 }

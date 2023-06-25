@@ -7,14 +7,14 @@ import (
 
 func setup(db *sql.DB) error {
 	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS branches (name TEXT, baseCommitId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+	CREATE TABLE IF NOT EXISTS workspaces (name TEXT, baseCommitId INTEGER, deleted INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
 	`
 	_, err := db.Exec(sqlStmt)
 	return err
 }
 
-func deleteBranch(db *sql.DB, branchId uint64) error {
-	_, err := db.Exec("UPDATE branches SET deleted = 1 WHERE rowid = ?", branchId)
+func deleteWorkspace(db *sql.DB, workspaceId uint64) error {
+	_, err := db.Exec("UPDATE workspaces SET deleted = 1 WHERE rowid = ?", workspaceId)
 	if err != nil {
 		return err
 	}
@@ -22,22 +22,22 @@ func deleteBranch(db *sql.DB, branchId uint64) error {
 	return err
 }
 
-func getBranchIdByName(db *sql.DB, branchName string) (uint64, error) {
-	row := db.QueryRow("SELECT rowid FROM branches WHERE name = ?", branchName)
+func getWorkspaceIdByName(db *sql.DB, workspaceName string) (uint64, error) {
+	row := db.QueryRow("SELECT rowid FROM workspaces WHERE name = ?", workspaceName)
 	if row.Err() != nil {
 		return 0, row.Err()
 	}
 
-	var branchId uint64
-	err := row.Scan(&branchId)
+	var workspaceId uint64
+	err := row.Scan(&workspaceId)
 	if errors.Is(sql.ErrNoRows, err) {
 		return 0, nil
 	}
-	return branchId, err
+	return workspaceId, err
 }
 
-func getBranchBaseCommitId(db *sql.DB, branchId uint64) (uint64, error) {
-	row := db.QueryRow("SELECT baseCommitId FROM branches WHERE rowid = ?", branchId)
+func getWorkspaceBaseCommitId(db *sql.DB, workspaceId uint64) (uint64, error) {
+	row := db.QueryRow("SELECT baseCommitId FROM workspaces WHERE rowid = ?", workspaceId)
 	if row.Err() != nil {
 		return 0, row.Err()
 	}
@@ -50,8 +50,8 @@ func getBranchBaseCommitId(db *sql.DB, branchId uint64) (uint64, error) {
 	return commitId, err
 }
 
-func getBranchNameById(db *sql.DB, branchId uint64) (string, error) {
-	row := db.QueryRow("SELECT name FROM branches WHERE rowid = ?", branchId)
+func getWorkspaceNameById(db *sql.DB, workspaceId uint64) (string, error) {
+	row := db.QueryRow("SELECT name FROM workspaces WHERE rowid = ?", workspaceId)
 	if row.Err() != nil {
 		return "", row.Err()
 	}
@@ -64,8 +64,8 @@ func getBranchNameById(db *sql.DB, branchId uint64) (string, error) {
 	return name, err
 }
 
-func addBranch(db *sql.DB, branchName string, baseCommitId uint64) (uint64, error) {
-	res, err := db.Exec("INSERT INTO branches(name, baseCommitId, deleted) VALUES(?, ?, 0)", branchName, baseCommitId)
+func addWorkspace(db *sql.DB, workspaceName string, baseCommitId uint64) (uint64, error) {
+	res, err := db.Exec("INSERT INTO workspaces(name, baseCommitId, deleted) VALUES(?, ?, 0)", workspaceName, baseCommitId)
 	if err != nil {
 		return 0, err
 	}
@@ -78,8 +78,8 @@ func addBranch(db *sql.DB, branchName string, baseCommitId uint64) (uint64, erro
 	return uint64(rowId), err
 }
 
-func listBranches(db *sql.DB) (map[string]uint64, error) {
-	rows, err := db.Query("SELECT rowid, name FROM branches WHERE deleted = 0")
+func listWorkspaces(db *sql.DB) (map[string]uint64, error) {
+	rows, err := db.Query("SELECT rowid, name FROM workspaces WHERE deleted = 0")
 	if err != nil {
 		return nil, err
 	}

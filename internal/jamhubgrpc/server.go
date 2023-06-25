@@ -13,10 +13,10 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamenv"
 	"github.com/zdgeier/jamhub/internal/jamhub/changestore"
 	"github.com/zdgeier/jamhub/internal/jamhub/db"
-	"github.com/zdgeier/jamhub/internal/jamhub/opdatastorebranch"
 	"github.com/zdgeier/jamhub/internal/jamhub/opdatastorecommit"
-	"github.com/zdgeier/jamhub/internal/jamhub/oplocstorebranch"
+	"github.com/zdgeier/jamhub/internal/jamhub/opdatastoreworkspace"
 	"github.com/zdgeier/jamhub/internal/jamhub/oplocstorecommit"
+	"github.com/zdgeier/jamhub/internal/jamhub/oplocstoreworkspace"
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc/serverauth"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
@@ -32,23 +32,23 @@ var prodF embed.FS
 var devF embed.FS
 
 type JamHub struct {
-	db                db.JamHubDb
-	opdatastorebranch *opdatastorebranch.LocalStore
-	opdatastorecommit *opdatastorecommit.LocalStore
-	oplocstorebranch  *oplocstorebranch.LocalOpLocStore
-	oplocstorecommit  *oplocstorecommit.LocalOpLocStore
-	changestore       changestore.LocalChangeStore
+	db                   db.JamHubDb
+	opdatastoreworkspace *opdatastoreworkspace.LocalStore
+	opdatastorecommit    *opdatastorecommit.LocalStore
+	oplocstoreworkspace  *oplocstoreworkspace.LocalOpLocStore
+	oplocstorecommit     *oplocstorecommit.LocalOpLocStore
+	changestore          changestore.LocalChangeStore
 	pb.UnimplementedJamHubServer
 }
 
 func New() (closer func(), err error) {
 	jamhub := JamHub{
-		db:                db.New(),
-		opdatastorebranch: opdatastorebranch.NewOpDataStoreBranch(),
-		opdatastorecommit: opdatastorecommit.NewOpDataStoreCommit(),
-		oplocstorebranch:  oplocstorebranch.NewOpLocStoreBranch(),
-		oplocstorecommit:  oplocstorecommit.NewOpLocStoreCommit(),
-		changestore:       changestore.NewLocalChangeStore(),
+		db:                   db.New(),
+		opdatastoreworkspace: opdatastoreworkspace.NewOpDataStoreWorkspace(),
+		opdatastorecommit:    opdatastorecommit.NewOpDataStoreCommit(),
+		oplocstoreworkspace:  oplocstoreworkspace.NewOpLocStoreWorkspace(),
+		oplocstorecommit:     oplocstorecommit.NewOpLocStoreCommit(),
+		changestore:          changestore.NewLocalChangeStore(),
 	}
 
 	var cert tls.Certificate

@@ -40,53 +40,53 @@ func (s LocalChangeStore) getLocalProjectDB(ownerId string, projectId uint64) (*
 	return localDB, nil
 }
 
-func (s LocalChangeStore) GetBranchNameById(ownerId string, projectId uint64, branchId uint64) (string, error) {
+func (s LocalChangeStore) GetWorkspaceNameById(ownerId string, projectId uint64, workspaceId uint64) (string, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return "", err
 	}
-	return getBranchNameById(db, branchId)
+	return getWorkspaceNameById(db, workspaceId)
 }
 
-func (s LocalChangeStore) GetBranchIdByName(ownerId string, projectId uint64, branchName string) (uint64, error) {
+func (s LocalChangeStore) GetWorkspaceIdByName(ownerId string, projectId uint64, workspaceName string) (uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return 0, err
 	}
-	return getBranchIdByName(db, branchName)
+	return getWorkspaceIdByName(db, workspaceName)
 }
 
-func (s LocalChangeStore) GetBranchBaseCommitId(ownerId string, projectId uint64, branchId uint64) (uint64, error) {
+func (s LocalChangeStore) GetWorkspaceBaseCommitId(ownerId string, projectId uint64, workspaceId uint64) (uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return 0, err
 	}
-	return getBranchBaseCommitId(db, branchId)
+	return getWorkspaceBaseCommitId(db, workspaceId)
 }
 
-func (s LocalChangeStore) DeleteBranch(ownerId string, projectId uint64, branchId uint64) error {
+func (s LocalChangeStore) DeleteWorkspace(ownerId string, projectId uint64, workspaceId uint64) error {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return err
 	}
-	return deleteBranch(db, branchId)
+	return deleteWorkspace(db, workspaceId)
 }
 
-func (s LocalChangeStore) AddBranch(ownerId string, projectId uint64, branchName string, commitId uint64) (uint64, error) {
+func (s LocalChangeStore) AddWorkspace(ownerId string, projectId uint64, workspaceName string, commitId uint64) (uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return 0, err
 	}
-	return addBranch(db, branchName, commitId)
+	return addWorkspace(db, workspaceName, commitId)
 }
 
-func (s LocalChangeStore) ListBranches(ownerId string, projectId uint64) (map[string]uint64, error) {
+func (s LocalChangeStore) ListWorkspaces(ownerId string, projectId uint64) (map[string]uint64, error) {
 	db, err := s.getLocalProjectDB(ownerId, projectId)
 	if err != nil {
 		return nil, err
 	}
 
-	return listBranches(db)
+	return listWorkspaces(db)
 }
 
 func (s LocalChangeStore) DeleteProject(projectId uint64, ownerId string) error {

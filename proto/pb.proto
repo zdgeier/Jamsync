@@ -15,23 +15,23 @@ service JamHub {
     // rpc GetProjectConfig(GetProjectConfigRequest) returns (ProjectConfig);
 
     // Change operations
-    rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse);
-    rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse);
-    rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
-    rpc GetBranchCurrentChange(GetBranchCurrentChangeRequest) returns (GetBranchCurrentChangeResponse);
-    rpc GetBranchId(GetBranchIdRequest) returns (GetBranchIdResponse);
-    rpc GetBranchName(GetBranchNameRequest) returns (GetBranchNameResponse);
+    rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse);
+    rpc DeleteWorkspace(DeleteWorkspaceRequest) returns (DeleteWorkspaceResponse);
+    rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+    rpc GetWorkspaceCurrentChange(GetWorkspaceCurrentChangeRequest) returns (GetWorkspaceCurrentChangeResponse);
+    rpc GetWorkspaceId(GetWorkspaceIdRequest) returns (GetWorkspaceIdResponse);
+    rpc GetWorkspaceName(GetWorkspaceNameRequest) returns (GetWorkspaceNameResponse);
 
     // File operations
     rpc ReadCommitChunkHashes(ReadCommitChunkHashesRequest) returns (ReadCommitChunkHashesResponse);
     rpc ReadCommittedFile(ReadCommittedFileRequest) returns (stream CommittedFileOperation);
     rpc ListCommitOperationLocations(ListCommitOperationLocationsRequest) returns (CommitOperationLocations);
-    rpc MergeBranch(MergeBranchRequest) returns (MergeBranchResponse);
+    rpc MergeWorkspace(MergeWorkspaceRequest) returns (MergeWorkspaceResponse);
 
-    rpc ReadBranchChunkHashes(ReadBranchChunkHashesRequest) returns (ReadBranchChunkHashesResponse);
-    rpc ReadBranchFile(ReadBranchFileRequest) returns (stream BranchFileOperation);
-    rpc ListBranchOperationLocations(ListBranchOperationLocationsRequest) returns (BranchOperationLocations);
-    rpc WriteBranchOperationsStream(stream BranchFileOperation) returns (WriteOperationStreamResponse);
+    rpc ReadWorkspaceChunkHashes(ReadWorkspaceChunkHashesRequest) returns (ReadWorkspaceChunkHashesResponse);
+    rpc ReadWorkspaceFile(ReadWorkspaceFileRequest) returns (stream WorkspaceFileOperation);
+    rpc ListWorkspaceOperationLocations(ListWorkspaceOperationLocationsRequest) returns (WorkspaceOperationLocations);
+    rpc WriteWorkspaceOperationsStream(stream WorkspaceFileOperation) returns (WriteOperationStreamResponse);
 
     // User operations
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
@@ -39,30 +39,30 @@ service JamHub {
     rpc Ping(PingRequest) returns (PingResponse);
 }
 
-message GetBranchNameRequest {
+message GetWorkspaceNameRequest {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
 }
 
-message GetBranchNameResponse {
-    string branch_name = 1;
+message GetWorkspaceNameResponse {
+    string workspace_name = 1;
 }
 
-message GetBranchIdRequest {
+message GetWorkspaceIdRequest {
     uint64 project_id = 1;
-    string branch_name = 2;
+    string workspace_name = 2;
 }
 
-message GetBranchIdResponse {
-    uint64 branch_id = 1;
+message GetWorkspaceIdResponse {
+    uint64 workspace_id = 1;
 }
 
-message GetBranchCurrentChangeRequest {
+message GetWorkspaceCurrentChangeRequest {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
 }
 
-message GetBranchCurrentChangeResponse {
+message GetWorkspaceCurrentChangeResponse {
     uint64 change_id = 1;
 }
 
@@ -113,11 +113,11 @@ message FileMetadataDiff {
     map<string, FileDiff> diffs = 1;
 }
 
-message BranchOperationLocations {
+message WorkspaceOperationLocations {
     uint64 project_id = 1;
     string owner_id = 2;
     bytes path_hash = 3;
-    uint64 branch_id = 4;
+    uint64 workspace_id = 4;
     uint64 change_id = 5;
     message OperationLocation {
         uint64 offset = 1;
@@ -142,33 +142,33 @@ message CommitOperationLocations {
     repeated OperationLocation opLocs = 5;
 }
 
-message MergeBranchRequest {
+message MergeWorkspaceRequest {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
 }
-message MergeBranchResponse {
+message MergeWorkspaceResponse {
     uint64 commit_id = 1;
 }
 
-message CreateBranchRequest {
+message CreateWorkspaceRequest {
     uint64 project_id = 1;
-    string branchName = 2;
+    string workspaceName = 2;
 }
-message CreateBranchResponse {
-    uint64 branch_id = 1;
+message CreateWorkspaceResponse {
+    uint64 workspace_id = 1;
 }
 
-message ListBranchesRequest {
+message ListWorkspacesRequest {
     uint64 project_id = 1;
     string project_name = 2;
 }
-message ListBranchesResponse {
-    map<string, uint64> branches = 1;
+message ListWorkspacesResponse {
+    map<string, uint64> workspaces = 1;
 }
 
-message BranchFileOperation {
+message WorkspaceFileOperation {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
     uint64 change_id = 3;
     bytes path_hash = 4;
     Operation op = 5;
@@ -209,18 +209,18 @@ message AddProjectResponse {
     uint64 project_id = 1;
 }
 
-message DeleteBranchRequest {
+message DeleteWorkspaceRequest {
     uint64 project_id = 2;
-    uint64 branch_id = 3;
+    uint64 workspace_id = 3;
 }
-message DeleteBranchResponse {}
+message DeleteWorkspaceResponse {}
 
-message GetBranchRequest {
+message GetWorkspaceRequest {
     uint64 project_id = 1;
-    string branch_name = 2;
+    string workspace_name = 2;
 }
-message GetBranchResponse {
-    uint64 branch_id = 1;
+message GetWorkspaceResponse {
+    uint64 workspace_id = 1;
     uint64 change_id = 2;
 }
 
@@ -268,12 +268,12 @@ message BrowseProjectResponse {
 // message GetProjectConfigRequest {
 //     string project_name = 1;
 //     uint64 project_id = 2;
-//     string branch_name = 3;
+//     string workspace_name = 3;
 // }
 // 
 // message ProjectConfig {
 //     uint64 projectId = 1;
-//     uint64 branchId = 2;
+//     uint64 workspaceId = 2;
 //     string project_name = 4;
 // }
 
@@ -304,24 +304,24 @@ message ReadCommittedFileRequest {
     repeated ChunkHash chunk_hashes = 5;
 }
 
-message ReadBranchFileRequest {
+message ReadWorkspaceFileRequest {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
     uint64 change_id = 3;
     bytes path_hash = 4;
     google.protobuf.Timestamp mod_time = 5; 
     repeated ChunkHash chunk_hashes = 6;
 }
 
-message ReadBranchChunkHashesRequest {
+message ReadWorkspaceChunkHashesRequest {
     uint64 project_id = 1;
-    uint64 branch_id = 2;
+    uint64 workspace_id = 2;
     uint64 change_id = 3;
     bytes path_hash = 4;
     google.protobuf.Timestamp mod_time = 5; 
 }
 
-message ReadBranchChunkHashesResponse {
+message ReadWorkspaceChunkHashesResponse {
     repeated ChunkHash chunk_hashes = 1;
 }
 
@@ -336,10 +336,10 @@ message ReadCommitChunkHashesResponse {
     repeated ChunkHash chunk_hashes = 1;
 }
 
-message ListBranchOperationLocationsRequest {
+message ListWorkspaceOperationLocationsRequest {
     uint64 project_id = 1;
     string path = 2;
-    uint64 branch_id = 3;
+    uint64 workspace_id = 3;
 }
 
 message ListCommitOperationLocationsRequest {

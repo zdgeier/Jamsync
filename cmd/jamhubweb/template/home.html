@@ -168,7 +168,7 @@
                 JamHub is an in-development fourth generation version control system that is being built for game
                 developers.
                 You can currently do things most that you would expect from a current version control system, like pulling,
-                pushing, branching, and merging, but it's not quite ready for production use -- expect some bugs. The
+                pushing, workspaceing, and merging, but it's not quite ready for production use -- expect some bugs. The
                 core algorithm
                 has been implemented but there's more work remaining to build out features that developers expect from a
                 full collaboration
@@ -181,15 +181,15 @@
             <ul>
                 <li><b>Mainline</b> - The production history of the project. Made up of a series of "commits" that
                     represent good versions of the project.</li>
-                <li><b>Branch</b> - A workspace for developers to make changes in. Developers will make "changes" in
-                    their branch and merge into the "mainline" when approved/ready. "Changes" will be tracked while in
-                    the branch, but will be squashed into a single "commit" when merged into the mainline. Eventually,
-                    changes will be able to be synced live between local developer machine and their branch.</li>
-                <li><b>Change</b> - A snapshot of a branch while developers are working on their project, made by doing
+                <li><b>Workspace</b> - A workspace for developers to make changes in. Developers will make "changes" in
+                    their workspace and merge into the "mainline" when approved/ready. "Changes" will be tracked while in
+                    the workspace, but will be squashed into a single "commit" when merged into the mainline. Eventually,
+                    changes will be able to be synced live between local developer machine and their workspace.</li>
+                <li><b>Change</b> - A snapshot of a workspace while developers are working on their project, made by doing
                     a `jam push`. </li>
-                <li><b>Commit</b> - A snapshot of the production version of the project, made by merging in a "branch".
+                <li><b>Commit</b> - A snapshot of the production version of the project, made by merging in a "workspace".
                 </li>
-                <li><b>Merge</b> - Occurs when a branch is squashed and committed to the "mainline".</li>
+                <li><b>Merge</b> - Occurs when a workspace is squashed and committed to the "mainline".</li>
             </ul>
             </p>
             <iframe class="About-videoLarge" width="100%" height="550px" src="https://www.youtube.com/embed/dFiwEmgvzuI"
@@ -320,11 +320,11 @@
                     href="https://wiki.mercurial-scm.org/RevlogNG#Deficiencies_in_original_revlog_format">essentially
                     caches the
                     entire file</a> at certain points and uses this later to have a smaller regeneration length.</p>
-            <h3>Branches</h3>
+            <h3>Workspaces</h3>
             <p class="About-description">
                 A chain of changes, formed by the process above, can be used to regenerate every file in a project.
-                Branches can be automatically rebased on top of the mainline.
-                This means that every branch will always be up-to-date. If conflicts occur during the rebase, a branch
+                Workspaces can be automatically rebased on top of the mainline.
+                This means that every workspace will always be up-to-date. If conflicts occur during the rebase, a workspace
                 will need manual merging.
             </p>
             <h3>Limitations</h3>

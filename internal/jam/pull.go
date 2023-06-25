@@ -33,19 +33,19 @@ func Pull() {
 	defer closer()
 
 	if state.CommitInfo == nil {
-		changeResp, err := apiClient.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchInfo.BranchId})
+		changeResp, err := apiClient.GetWorkspaceCurrentChange(context.Background(), &pb.GetWorkspaceCurrentChangeRequest{ProjectId: state.ProjectId, WorkspaceId: state.WorkspaceInfo.WorkspaceId})
 		if err != nil {
 			panic(err)
 		}
 
 		fileMetadata := ReadLocalFileList()
-		remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), fileMetadata)
+		remoteToLocalDiff, err := DiffRemoteToLocalWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.GetChangeId(), fileMetadata)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		if DiffHasChanges(remoteToLocalDiff) {
-			err = ApplyFileListDiffBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, changeResp.GetChangeId(), remoteToLocalDiff)
+			err = ApplyFileListDiffWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, changeResp.GetChangeId(), remoteToLocalDiff)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -59,9 +59,9 @@ func Pull() {
 		}
 		err = statefile.StateFile{
 			ProjectId: state.ProjectId,
-			BranchInfo: &statefile.BranchInfo{
-				BranchId: state.BranchInfo.BranchId,
-				ChangeId: changeResp.ChangeId,
+			WorkspaceInfo: &statefile.WorkspaceInfo{
+				WorkspaceId: state.WorkspaceInfo.WorkspaceId,
+				ChangeId:    changeResp.ChangeId,
 			},
 		}.Save()
 		if err != nil {

@@ -150,9 +150,9 @@ func ReadLocalFileList() *pb.FileMetadata {
 	}
 }
 
-func uploadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
+func uploadWorkspaceFiles(ctx context.Context, apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
 	type pathResponse struct {
-		chunkHashResponse *pb.ReadBranchChunkHashesResponse
+		chunkHashResponse *pb.ReadWorkspaceChunkHashesResponse
 		path              string
 	}
 	chunkHashResponses := make(chan pathResponse, numFiles)
@@ -161,7 +161,7 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId
 	numUploadFinished := make(chan bool)
 	for i := 0; i < numUpload; i++ {
 		go func() {
-			writeStream, err := apiClient.WriteBranchOperationsStream(ctx)
+			writeStream, err := apiClient.WriteWorkspaceOperationsStream(ctx)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -202,12 +202,12 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId
 				}()
 				sent := 0
 				for op := range opsOut {
-					err = writeStream.Send(&pb.BranchFileOperation{
-						ProjectId: projectId,
-						BranchId:  branchId,
-						ChangeId:  changeId,
-						PathHash:  pathToHash(resp.path),
-						Op:        op,
+					err = writeStream.Send(&pb.WorkspaceFileOperation{
+						ProjectId:   projectId,
+						WorkspaceId: workspaceId,
+						ChangeId:    changeId,
+						PathHash:    pathToHash(resp.path),
+						Op:          op,
 					})
 					if err != nil {
 						log.Panic(err)
@@ -239,12 +239,12 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId
 	for i := 0; i < numHashDownload; i++ {
 		go func() {
 			for path := range paths {
-				chunkHashResp, err := apiClient.ReadBranchChunkHashes(ctx, &pb.ReadBranchChunkHashesRequest{
-					ProjectId: projectId,
-					BranchId:  branchId,
-					ChangeId:  changeId,
-					PathHash:  pathToHash(path),
-					ModTime:   timestamppb.Now(),
+				chunkHashResp, err := apiClient.ReadWorkspaceChunkHashes(ctx, &pb.ReadWorkspaceChunkHashesRequest{
+					ProjectId:   projectId,
+					WorkspaceId: workspaceId,
+					ChangeId:    changeId,
+					PathHash:    pathToHash(path),
+					ModTime:     timestamppb.Now(),
 				})
 				if err != nil {
 					results <- err
@@ -262,13 +262,13 @@ func uploadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId
 	<-done
 }
 
-func uploadBranchFile(apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, filePath string, sourceReader io.Reader) error {
-	chunkHashesResp, err := apiClient.ReadBranchChunkHashes(context.TODO(), &pb.ReadBranchChunkHashesRequest{
-		ProjectId: projectId,
-		BranchId:  branchId,
-		ChangeId:  changeId - 1,
-		PathHash:  pathToHash(filePath),
-		ModTime:   timestamppb.Now(),
+func uploadWorkspaceFile(apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, filePath string, sourceReader io.Reader) error {
+	chunkHashesResp, err := apiClient.ReadWorkspaceChunkHashes(context.TODO(), &pb.ReadWorkspaceChunkHashesRequest{
+		ProjectId:   projectId,
+		WorkspaceId: workspaceId,
+		ChangeId:    changeId - 1,
+		PathHash:    pathToHash(filePath),
+		ModTime:     timestamppb.Now(),
 	})
 	if err != nil {
 		return err
@@ -307,17 +307,17 @@ func uploadBranchFile(apiClient pb.JamHubClient, projectId uint64, branchId uint
 		}
 	}()
 
-	writeStream, err := apiClient.WriteBranchOperationsStream(context.TODO())
+	writeStream, err := apiClient.WriteWorkspaceOperationsStream(context.TODO())
 	if err != nil {
 		return err
 	}
 	for op := range opsOut {
-		err = writeStream.Send(&pb.BranchFileOperation{
-			ProjectId: projectId,
-			BranchId:  branchId,
-			ChangeId:  changeId,
-			PathHash:  pathToHash(filePath),
-			Op:        op,
+		err = writeStream.Send(&pb.WorkspaceFileOperation{
+			ProjectId:   projectId,
+			WorkspaceId: workspaceId,
+			ChangeId:    changeId,
+			PathHash:    pathToHash(filePath),
+			Op:          op,
 		})
 		if err != nil {
 			log.Panic(err)
@@ -333,7 +333,7 @@ func pathToHash(path string) []byte {
 	return h[:]
 }
 
-func pushFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) error {
+func pushFileListDiffWorkspace(apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, fileMetadata *pb.FileMetadata, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 
 	var numFiles int64
@@ -346,7 +346,7 @@ func pushFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branchI
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go uploadBranchFiles(ctx, apiClient, projectId, branchId, changeId, paths, results, numFiles)
+	go uploadWorkspaceFiles(ctx, apiClient, projectId, workspaceId, changeId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -376,7 +376,7 @@ func pushFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branchI
 	if err != nil {
 		return err
 	}
-	err = uploadBranchFile(apiClient, projectId, branchId, changeId, ".jamhubfilelist", bytes.NewReader(metadataBytes))
+	err = uploadWorkspaceFile(apiClient, projectId, workspaceId, changeId, ".jamhubfilelist", bytes.NewReader(metadataBytes))
 	if err != nil {
 		return err
 	}
@@ -384,7 +384,7 @@ func pushFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branchI
 	return err
 }
 
-func downloadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
+func downloadWorkspaceFiles(ctx context.Context, apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, paths <-chan string, results chan<- error, numFiles int64) {
 	numUpload := 64
 	numUploadFinished := make(chan bool)
 	for i := 0; i < numUpload; i++ {
@@ -416,9 +416,9 @@ func downloadBranchFiles(ctx context.Context, apiClient pb.JamHubClient, project
 					continue
 				}
 
-				readFileClient, err := apiClient.ReadBranchFile(ctx, &pb.ReadBranchFileRequest{
+				readFileClient, err := apiClient.ReadWorkspaceFile(ctx, &pb.ReadWorkspaceFileRequest{
 					ProjectId:   projectId,
-					BranchId:    branchId,
+					WorkspaceId: workspaceId,
 					ChangeId:    changeId,
 					PathHash:    pathToHash(path),
 					ModTime:     timestamppb.Now(),
@@ -649,7 +649,7 @@ func ApplyFileListDiffCommit(apiClient pb.JamHubClient, projectId, commitId uint
 	return nil
 }
 
-func ApplyFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
+func ApplyFileListDiffWorkspace(apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, fileMetadataDiff *pb.FileMetadataDiff) error {
 	ctx := context.Background()
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetFile().GetDir() {
@@ -673,7 +673,7 @@ func ApplyFileListDiffBranch(apiClient pb.JamHubClient, projectId uint64, branch
 	paths := make(chan string, numFiles)
 	results := make(chan error, numFiles)
 
-	go downloadBranchFiles(ctx, apiClient, projectId, branchId, changeId, paths, results, numFiles)
+	go downloadWorkspaceFiles(ctx, apiClient, projectId, workspaceId, changeId, paths, results, numFiles)
 
 	for path, diff := range fileMetadataDiff.GetDiffs() {
 		if diff.GetType() != pb.FileMetadataDiff_NoOp && diff.GetType() != pb.FileMetadataDiff_Delete && !diff.GetFile().GetDir() {
@@ -751,14 +751,14 @@ func DiffRemoteToLocalCommit(apiClient pb.JamHubClient, projectId uint64, commit
 	}, err
 }
 
-func DiffRemoteToLocalBranch(apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+func DiffRemoteToLocalWorkspace(apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return nil, err
 	}
 	metadataReader := bytes.NewReader(metadataBytes)
 	metadataResult := new(bytes.Buffer)
-	err = file.DownloadBranchFile(apiClient, projectId, branchId, changeId, ".jamhubfilelist", metadataReader, metadataResult)
+	err = file.DownloadWorkspaceFile(apiClient, projectId, workspaceId, changeId, ".jamhubfilelist", metadataReader, metadataResult)
 	if err != nil {
 		return nil, err
 	}
@@ -851,14 +851,14 @@ func diffLocalToRemoteCommit(apiClient pb.JamHubClient, projectId uint64, commit
 	}, err
 }
 
-func DiffLocalToRemoteBranch(apiClient pb.JamHubClient, projectId uint64, branchId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
+func DiffLocalToRemoteWorkspace(apiClient pb.JamHubClient, projectId uint64, workspaceId uint64, changeId uint64, fileMetadata *pb.FileMetadata) (*pb.FileMetadataDiff, error) {
 	metadataBytes, err := proto.Marshal(fileMetadata)
 	if err != nil {
 		return nil, err
 	}
 	metadataReader := bytes.NewReader(metadataBytes)
 	metadataResult := new(bytes.Buffer)
-	err = file.DownloadBranchFile(apiClient, projectId, branchId, changeId, ".jamhubfilelist", metadataReader, metadataResult)
+	err = file.DownloadWorkspaceFile(apiClient, projectId, workspaceId, changeId, ".jamhubfilelist", metadataReader, metadataResult)
 	if err != nil {
 		return nil, err
 	}

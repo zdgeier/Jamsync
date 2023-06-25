@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s JamHub) CreateBranch(ctx context.Context, in *pb.CreateBranchRequest) (*pb.CreateBranchResponse, error) {
+func (s JamHub) CreateWorkspace(ctx context.Context, in *pb.CreateWorkspaceRequest) (*pb.CreateWorkspaceResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -27,89 +27,89 @@ func (s JamHub) CreateBranch(ctx context.Context, in *pb.CreateBranchRequest) (*
 		return nil, err
 	}
 
-	branchId, err := s.changestore.AddBranch(userId, in.GetProjectId(), in.GetBranchName(), maxCommitId)
+	workspaceId, err := s.changestore.AddWorkspace(userId, in.GetProjectId(), in.GetWorkspaceName(), maxCommitId)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.CreateBranchResponse{
-		BranchId: branchId,
+	return &pb.CreateWorkspaceResponse{
+		WorkspaceId: workspaceId,
 	}, nil
 }
 
-func (s JamHub) GetBranchName(ctx context.Context, in *pb.GetBranchNameRequest) (*pb.GetBranchNameResponse, error) {
+func (s JamHub) GetWorkspaceName(ctx context.Context, in *pb.GetWorkspaceNameRequest) (*pb.GetWorkspaceNameResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	branchName, err := s.changestore.GetBranchNameById(userId, in.GetProjectId(), in.GetBranchId())
+	workspaceName, err := s.changestore.GetWorkspaceNameById(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.GetBranchNameResponse{
-		BranchName: branchName,
+	return &pb.GetWorkspaceNameResponse{
+		WorkspaceName: workspaceName,
 	}, nil
 }
 
-func (s JamHub) GetBranchId(ctx context.Context, in *pb.GetBranchIdRequest) (*pb.GetBranchIdResponse, error) {
+func (s JamHub) GetWorkspaceId(ctx context.Context, in *pb.GetWorkspaceIdRequest) (*pb.GetWorkspaceIdResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	branchId, err := s.changestore.GetBranchIdByName(userId, in.GetProjectId(), in.GetBranchName())
+	workspaceId, err := s.changestore.GetWorkspaceIdByName(userId, in.GetProjectId(), in.GetWorkspaceName())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.GetBranchIdResponse{
-		BranchId: branchId,
+	return &pb.GetWorkspaceIdResponse{
+		WorkspaceId: workspaceId,
 	}, nil
 }
 
-func (s JamHub) GetBranchCurrentChange(ctx context.Context, in *pb.GetBranchCurrentChangeRequest) (*pb.GetBranchCurrentChangeResponse, error) {
+func (s JamHub) GetWorkspaceCurrentChange(ctx context.Context, in *pb.GetWorkspaceCurrentChangeRequest) (*pb.GetWorkspaceCurrentChangeResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	changeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
+	changeId, err := s.oplocstoreworkspace.MaxChangeId(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.GetBranchCurrentChangeResponse{
+	return &pb.GetWorkspaceCurrentChangeResponse{
 		ChangeId: changeId,
 	}, nil
 }
 
-func (s JamHub) ListBranches(ctx context.Context, in *pb.ListBranchesRequest) (*pb.ListBranchesResponse, error) {
+func (s JamHub) ListWorkspaces(ctx context.Context, in *pb.ListWorkspacesRequest) (*pb.ListWorkspacesResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	branches, err := s.changestore.ListBranches(userId, in.GetProjectId())
+	workspaces, err := s.changestore.ListWorkspaces(userId, in.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.ListBranchesResponse{
-		Branches: branches,
+	return &pb.ListWorkspacesResponse{
+		Workspaces: workspaces,
 	}, nil
 }
 
-func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsStreamServer) error {
+func (s JamHub) WriteWorkspaceOperationsStream(srv pb.JamHub_WriteWorkspaceOperationsStreamServer) error {
 	userId, err := serverauth.ParseIdFromCtx(srv.Context())
 	if err != nil {
 		return err
 	}
 
 	var projectOwner string
-	var projectId, branchId, changeId, operationProject uint64
-	pathHashToOpLocs := make(map[string][]*pb.BranchOperationLocations_OperationLocation, 0)
+	var projectId, workspaceId, changeId, operationProject uint64
+	pathHashToOpLocs := make(map[string][]*pb.WorkspaceOperationLocations_OperationLocation, 0)
 	for {
 		in, err := srv.Recv()
 		if err == io.EOF {
@@ -120,7 +120,7 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 		}
 
 		projectId = in.GetProjectId()
-		branchId = in.GetBranchId()
+		workspaceId = in.GetWorkspaceId()
 		changeId = in.GetChangeId()
 		if operationProject == 0 {
 			owner, err := s.db.GetProjectOwner(projectId)
@@ -141,9 +141,9 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 		pathHash := in.GetPathHash()
 
 		var chunkHash *pb.ChunkHash
-		var branchOffset, branchLength, commitOffset, commitLength uint64
+		var workspaceOffset, workspaceLength, commitOffset, commitLength uint64
 		if in.GetOp().GetType() == pb.Operation_OpData {
-			branchOffset, branchLength, err = s.opdatastorebranch.Write(userId, projectId, branchId, pathHash, in.GetOp())
+			workspaceOffset, workspaceLength, err = s.opdatastoreworkspace.Write(userId, projectId, workspaceId, pathHash, in.GetOp())
 			if err != nil {
 				return err
 			}
@@ -161,20 +161,20 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 		}
 
 		if in.GetOp().GetType() == pb.Operation_OpBlock {
-			opLocs, err := s.oplocstorebranch.ListOperationLocations(projectOwner, projectId, branchId, changeId-1, pathHash)
+			opLocs, err := s.oplocstoreworkspace.ListOperationLocations(projectOwner, projectId, workspaceId, changeId-1, pathHash)
 			if err != nil {
 				return err
 			}
 			for _, loc := range opLocs.GetOpLocs() {
 				if loc.GetChunkHash().GetHash() == in.GetOp().GetChunkHash().GetHash() {
-					branchOffset = loc.GetOffset()
-					branchLength = loc.GetLength()
+					workspaceOffset = loc.GetOffset()
+					workspaceLength = loc.GetLength()
 					break
 				}
 			}
 
-			if branchOffset == 0 && branchLength == 0 {
-				commitId, err := s.changestore.GetBranchBaseCommitId(projectOwner, projectId, branchId)
+			if workspaceOffset == 0 && workspaceLength == 0 {
+				commitId, err := s.changestore.GetWorkspaceBaseCommitId(projectOwner, projectId, workspaceId)
 				if err != nil {
 					return err
 				}
@@ -194,14 +194,14 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 
 				if commitOffset == 0 && commitLength == 0 {
 					fmt.Println(projectOwner, projectId, commitId, pathHash, commitOffset, commitLength, commitOpLocs)
-					log.Panic("Operation of type block but hash could not be found in branch or commit")
+					log.Panic("Operation of type block but hash could not be found in workspace or commit")
 				}
 			}
 		}
 
-		operationLocation := &pb.BranchOperationLocations_OperationLocation{
-			Offset:       branchOffset,
-			Length:       branchLength,
+		operationLocation := &pb.WorkspaceOperationLocations_OperationLocation{
+			Offset:       workspaceOffset,
+			Length:       workspaceLength,
 			CommitOffset: commitOffset,
 			CommitLength: commitLength,
 			ChunkHash:    chunkHash,
@@ -210,13 +210,13 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 	}
 
 	for pathHash, opLocs := range pathHashToOpLocs {
-		err = s.oplocstorebranch.InsertOperationLocations(&pb.BranchOperationLocations{
-			ProjectId: projectId,
-			OwnerId:   projectOwner,
-			BranchId:  branchId,
-			ChangeId:  changeId,
-			PathHash:  []byte(pathHash),
-			OpLocs:    opLocs,
+		err = s.oplocstoreworkspace.InsertOperationLocations(&pb.WorkspaceOperationLocations{
+			ProjectId:   projectId,
+			OwnerId:     projectOwner,
+			WorkspaceId: workspaceId,
+			ChangeId:    changeId,
+			PathHash:    []byte(pathHash),
+			OpLocs:      opLocs,
 		})
 		if err != nil {
 			return err
@@ -226,7 +226,7 @@ func (s JamHub) WriteBranchOperationsStream(srv pb.JamHub_WriteBranchOperationsS
 	return srv.SendAndClose(&pb.WriteOperationStreamResponse{})
 }
 
-func (s JamHub) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBranchChunkHashesRequest) (*pb.ReadBranchChunkHashesResponse, error) {
+func (s JamHub) ReadWorkspaceChunkHashes(ctx context.Context, in *pb.ReadWorkspaceChunkHashesRequest) (*pb.ReadWorkspaceChunkHashesResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		if in.GetProjectId() != 1 {
@@ -234,7 +234,7 @@ func (s JamHub) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBranchChun
 		}
 	}
 
-	targetBuffer, err := s.regenBranchFile(userId, in.GetProjectId(), in.GetBranchId(), in.GetChangeId(), in.GetPathHash())
+	targetBuffer, err := s.regenWorkspaceFile(userId, in.GetProjectId(), in.GetWorkspaceId(), in.GetChangeId(), in.GetPathHash())
 	if err != nil {
 		return nil, err
 	}
@@ -251,13 +251,13 @@ func (s JamHub) ReadBranchChunkHashes(ctx context.Context, in *pb.ReadBranchChun
 		sig = append(sig, ch)
 		return nil
 	})
-	return &pb.ReadBranchChunkHashesResponse{
+	return &pb.ReadWorkspaceChunkHashesResponse{
 		ChunkHashes: sig,
 	}, err
 }
 
-func (s JamHub) regenBranchFile(userId string, projectId, branchId, changeId uint64, pathHash []byte) (*bytes.Reader, error) {
-	commitId, err := s.changestore.GetBranchBaseCommitId(userId, projectId, branchId)
+func (s JamHub) regenWorkspaceFile(userId string, projectId, workspaceId, changeId uint64, pathHash []byte) (*bytes.Reader, error) {
+	commitId, err := s.changestore.GetWorkspaceBaseCommitId(userId, projectId, workspaceId)
 	if err != nil {
 		return nil, err
 	}
@@ -267,9 +267,9 @@ func (s JamHub) regenBranchFile(userId string, projectId, branchId, changeId uin
 		return nil, err
 	}
 
-	var operationLocations *pb.BranchOperationLocations
+	var operationLocations *pb.WorkspaceOperationLocations
 	for i := int(changeId); i >= 0 && operationLocations == nil; i-- {
-		operationLocations, err = s.oplocstorebranch.ListOperationLocations(userId, projectId, branchId, uint64(i), pathHash)
+		operationLocations, err = s.oplocstoreworkspace.ListOperationLocations(userId, projectId, workspaceId, uint64(i), pathHash)
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +288,7 @@ func (s JamHub) regenBranchFile(userId string, projectId, branchId, changeId uin
 				}
 				ops <- op
 			} else {
-				op, err := s.opdatastorebranch.Read(userId, projectId, branchId, pathHash, loc.GetOffset(), loc.GetLength())
+				op, err := s.opdatastoreworkspace.Read(userId, projectId, workspaceId, pathHash, loc.GetOffset(), loc.GetLength())
 				if err != nil {
 					log.Panic(err)
 				}
@@ -313,7 +313,7 @@ func (s JamHub) regenBranchFile(userId string, projectId, branchId, changeId uin
 	return bytes.NewReader(result.Bytes()), nil
 }
 
-func (s JamHub) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.JamHub_ReadBranchFileServer) error {
+func (s JamHub) ReadWorkspaceFile(in *pb.ReadWorkspaceFileRequest, srv pb.JamHub_ReadWorkspaceFileServer) error {
 	userId, err := serverauth.ParseIdFromCtx(srv.Context())
 	if err != nil {
 		return err
@@ -321,14 +321,14 @@ func (s JamHub) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.JamHub_ReadB
 
 	changeId := in.GetChangeId()
 	if changeId == 0 {
-		maxChangeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
+		maxChangeId, err := s.oplocstoreworkspace.MaxChangeId(userId, in.GetProjectId(), in.GetWorkspaceId())
 		if err != nil {
 			return err
 		}
 		changeId = maxChangeId
 	}
 
-	sourceBuffer, err := s.regenBranchFile(userId, in.GetProjectId(), in.GetBranchId(), changeId, in.GetPathHash())
+	sourceBuffer, err := s.regenWorkspaceFile(userId, in.GetProjectId(), in.GetWorkspaceId(), changeId, in.GetPathHash())
 	if err != nil {
 		return err
 	}
@@ -367,11 +367,11 @@ func (s JamHub) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.JamHub_ReadB
 	}()
 
 	for op := range opsOut {
-		err = srv.Send(&pb.BranchFileOperation{
-			BranchId:  in.BranchId,
-			ProjectId: in.GetProjectId(),
-			PathHash:  in.GetPathHash(),
-			Op:        op,
+		err = srv.Send(&pb.WorkspaceFileOperation{
+			WorkspaceId: in.WorkspaceId,
+			ProjectId:   in.GetProjectId(),
+			PathHash:    in.GetPathHash(),
+			Op:          op,
 		})
 		if err != nil {
 			return err
@@ -380,26 +380,26 @@ func (s JamHub) ReadBranchFile(in *pb.ReadBranchFileRequest, srv pb.JamHub_ReadB
 	return nil
 }
 
-func (s JamHub) DeleteBranch(ctx context.Context, in *pb.DeleteBranchRequest) (*pb.DeleteBranchResponse, error) {
+func (s JamHub) DeleteWorkspace(ctx context.Context, in *pb.DeleteWorkspaceRequest) (*pb.DeleteWorkspaceResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.opdatastorebranch.DeleteBranch(userId, in.GetProjectId(), in.GetBranchId())
+	err = s.opdatastoreworkspace.DeleteWorkspace(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
-	err = s.oplocstorebranch.DeleteBranch(userId, in.GetProjectId(), in.GetBranchId())
+	err = s.oplocstoreworkspace.DeleteWorkspace(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
-	err = s.changestore.DeleteBranch(userId, in.GetProjectId(), in.GetBranchId())
+	err = s.changestore.DeleteWorkspace(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.DeleteBranchResponse{}, nil
+	return &pb.DeleteWorkspaceResponse{}, nil
 }

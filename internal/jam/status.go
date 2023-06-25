@@ -40,29 +40,29 @@ func Status() {
 	}
 	fmt.Printf("Project: %s\n", nameResp.ProjectName)
 
-	if state.BranchInfo != nil {
-		branchNameResp, err := apiClient.GetBranchName(context.Background(), &pb.GetBranchNameRequest{
-			ProjectId: state.ProjectId,
-			BranchId:  state.BranchInfo.BranchId,
+	if state.WorkspaceInfo != nil {
+		workspaceNameResp, err := apiClient.GetWorkspaceName(context.Background(), &pb.GetWorkspaceNameRequest{
+			ProjectId:   state.ProjectId,
+			WorkspaceId: state.WorkspaceInfo.WorkspaceId,
 		})
 		if err != nil {
 			panic(err)
 		}
 		fmt.Printf(
-			"Branch:  %s\n"+
+			"Workspace:  %s\n"+
 				"Change:  %d\n",
-			branchNameResp.GetBranchName(),
-			state.BranchInfo.ChangeId,
+			workspaceNameResp.GetWorkspaceName(),
+			state.WorkspaceInfo.ChangeId,
 		)
 
-		changeResp, err := apiClient.GetBranchCurrentChange(context.Background(), &pb.GetBranchCurrentChangeRequest{ProjectId: state.ProjectId, BranchId: state.BranchInfo.BranchId})
+		changeResp, err := apiClient.GetWorkspaceCurrentChange(context.Background(), &pb.GetWorkspaceCurrentChangeRequest{ProjectId: state.ProjectId, WorkspaceId: state.WorkspaceInfo.WorkspaceId})
 		if err != nil {
 			panic(err)
 		}
 
-		if changeResp.ChangeId == state.BranchInfo.ChangeId {
+		if changeResp.ChangeId == state.WorkspaceInfo.ChangeId {
 			fileMetadata := ReadLocalFileList()
-			localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			localToRemoteDiff, err := DiffLocalToRemoteWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -78,9 +78,9 @@ func Status() {
 				fmt.Println("\nNo local or remote changes.")
 
 			}
-		} else if changeResp.ChangeId > state.BranchInfo.ChangeId {
+		} else if changeResp.ChangeId > state.WorkspaceInfo.ChangeId {
 			fileMetadata := ReadLocalFileList()
-			remoteToLocalDiff, err := DiffRemoteToLocalBranch(apiClient, state.ProjectId, state.BranchInfo.BranchId, state.BranchInfo.ChangeId, fileMetadata)
+			remoteToLocalDiff, err := DiffRemoteToLocalWorkspace(apiClient, state.ProjectId, state.WorkspaceInfo.WorkspaceId, state.WorkspaceInfo.ChangeId, fileMetadata)
 			if err != nil {
 				log.Panic(err)
 			}

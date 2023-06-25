@@ -61,7 +61,7 @@ func GetProjectCurrentCommitHandler() gin.HandlerFunc {
 	}
 }
 
-func GetBranchInfoHandler() gin.HandlerFunc {
+func GetWorkspaceInfoHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -79,26 +79,26 @@ func GetBranchInfoHandler() gin.HandlerFunc {
 			return
 		}
 
-		branchIdResponse, err := tempClient.GetBranchId(ctx, &pb.GetBranchIdRequest{ProjectId: id.GetProjectId(), BranchName: ctx.Param("branchName")})
+		workspaceIdResponse, err := tempClient.GetWorkspaceId(ctx, &pb.GetWorkspaceIdRequest{ProjectId: id.GetProjectId(), WorkspaceName: ctx.Param("workspaceName")})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		resp, err := tempClient.GetBranchCurrentChange(ctx, &pb.GetBranchCurrentChangeRequest{ProjectId: id.GetProjectId(), BranchId: branchIdResponse.BranchId})
+		resp, err := tempClient.GetWorkspaceCurrentChange(ctx, &pb.GetWorkspaceCurrentChangeRequest{ProjectId: id.GetProjectId(), WorkspaceId: workspaceIdResponse.WorkspaceId})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		type branchInfo struct {
-			BranchId uint64 `json:"branch_id"`
-			ChangeId uint64 `json:"change_id"`
+		type workspaceInfo struct {
+			WorkspaceId uint64 `json:"workspace_id"`
+			ChangeId    uint64 `json:"change_id"`
 		}
 
-		ctx.JSON(200, &branchInfo{
-			BranchId: branchIdResponse.BranchId,
-			ChangeId: resp.ChangeId,
+		ctx.JSON(200, &workspaceInfo{
+			WorkspaceId: workspaceIdResponse.WorkspaceId,
+			ChangeId:    resp.ChangeId,
 		})
 	}
 }
@@ -162,7 +162,7 @@ func ProjectBrowseCommitHandler() gin.HandlerFunc {
 	}
 }
 
-func ProjectBrowseBranchHandler() gin.HandlerFunc {
+func ProjectBrowseWorkspaceHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -180,7 +180,7 @@ func ProjectBrowseBranchHandler() gin.HandlerFunc {
 			return
 		}
 
-		branchId, err := strconv.Atoi(ctx.Param("branchId"))
+		workspaceId, err := strconv.Atoi(ctx.Param("workspaceId"))
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
@@ -193,7 +193,7 @@ func ProjectBrowseBranchHandler() gin.HandlerFunc {
 		}
 
 		metadataResult := new(bytes.Buffer)
-		err = file.DownloadBranchFile(tempClient, id.GetProjectId(), uint64(branchId), uint64(changeId), ".jamhubfilelist", bytes.NewReader([]byte{}), metadataResult)
+		err = file.DownloadWorkspaceFile(tempClient, id.GetProjectId(), uint64(workspaceId), uint64(changeId), ".jamhubfilelist", bytes.NewReader([]byte{}), metadataResult)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -226,7 +226,7 @@ func ProjectBrowseBranchHandler() gin.HandlerFunc {
 	}
 }
 
-func GetFileBranchHandler() gin.HandlerFunc {
+func GetFileWorkspaceHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -244,7 +244,7 @@ func GetFileBranchHandler() gin.HandlerFunc {
 			return
 		}
 
-		branchId, err := strconv.Atoi(ctx.Param("branchId"))
+		workspaceId, err := strconv.Atoi(ctx.Param("workspaceId"))
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
@@ -256,7 +256,7 @@ func GetFileBranchHandler() gin.HandlerFunc {
 			return
 		}
 
-		err = file.DownloadBranchFile(tempClient, config.ProjectId, uint64(branchId), uint64(changeId), ctx.Param("path")[1:], bytes.NewReader([]byte{}), ctx.Writer)
+		err = file.DownloadWorkspaceFile(tempClient, config.ProjectId, uint64(workspaceId), uint64(changeId), ctx.Param("path")[1:], bytes.NewReader([]byte{}), ctx.Writer)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -296,7 +296,7 @@ func GetFileCommitHandler() gin.HandlerFunc {
 	}
 }
 
-func GetBranchesHandler() gin.HandlerFunc {
+func GetWorkspacesHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
@@ -314,7 +314,7 @@ func GetBranchesHandler() gin.HandlerFunc {
 			return
 		}
 
-		resp, err := tempClient.ListBranches(ctx, &pb.ListBranchesRequest{
+		resp, err := tempClient.ListWorkspaces(ctx, &pb.ListWorkspacesRequest{
 			ProjectId: config.ProjectId,
 		})
 		if err != nil {

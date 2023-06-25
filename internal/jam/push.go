@@ -33,19 +33,19 @@ func Push() {
 	defer closer()
 
 	if stateFile.CommitInfo != nil {
-		fmt.Println("Currently on a commit, checkout a branch with `jam checkout <branchname>` to push changes.")
+		fmt.Println("Currently on a commit, checkout a workspace with `jam checkout <workspacename>` to push changes.")
 		os.Exit(1)
 	}
 
 	fileMetadata := ReadLocalFileList()
-	localToRemoteDiff, err := DiffLocalToRemoteBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, stateFile.BranchInfo.ChangeId, fileMetadata)
+	localToRemoteDiff, err := DiffLocalToRemoteWorkspace(apiClient, stateFile.ProjectId, stateFile.WorkspaceInfo.WorkspaceId, stateFile.WorkspaceInfo.ChangeId, fileMetadata)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	changeId := stateFile.BranchInfo.ChangeId + 1
+	changeId := stateFile.WorkspaceInfo.ChangeId + 1
 	if DiffHasChanges(localToRemoteDiff) {
-		err = pushFileListDiffBranch(apiClient, stateFile.ProjectId, stateFile.BranchInfo.BranchId, changeId, fileMetadata, localToRemoteDiff)
+		err = pushFileListDiffWorkspace(apiClient, stateFile.ProjectId, stateFile.WorkspaceInfo.WorkspaceId, changeId, fileMetadata, localToRemoteDiff)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -60,9 +60,9 @@ func Push() {
 
 	err = statefile.StateFile{
 		ProjectId: stateFile.ProjectId,
-		BranchInfo: &statefile.BranchInfo{
-			BranchId: stateFile.BranchInfo.BranchId,
-			ChangeId: changeId,
+		WorkspaceInfo: &statefile.WorkspaceInfo{
+			WorkspaceId: stateFile.WorkspaceInfo.WorkspaceId,
+			ChangeId:    changeId,
 		},
 	}.Save()
 	if err != nil {

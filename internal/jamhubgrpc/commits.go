@@ -166,7 +166,7 @@ func (s JamHub) ReadCommittedFile(in *pb.ReadCommittedFileRequest, srv pb.JamHub
 	return nil
 }
 
-func (s JamHub) MergeBranch(ctx context.Context, in *pb.MergeBranchRequest) (*pb.MergeBranchResponse, error) {
+func (s JamHub) MergeWorkspace(ctx context.Context, in *pb.MergeWorkspaceRequest) (*pb.MergeWorkspaceResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		if in.GetProjectId() != 1 {
@@ -182,17 +182,17 @@ func (s JamHub) MergeBranch(ctx context.Context, in *pb.MergeBranchRequest) (*pb
 		return nil, err
 	}
 
-	// Regen every file that has been changed in branch
-	changedPathHashes, err := s.opdatastorebranch.GetChangedPathHashes(userId, in.GetProjectId(), in.GetBranchId())
+	// Regen every file that has been changed in workspace
+	changedPathHashes, err := s.opdatastoreworkspace.GetChangedPathHashes(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 	if len(changedPathHashes) == 0 {
 		// NO CHANGES
-		return &pb.MergeBranchResponse{CommitId: prevCommitId}, nil
+		return &pb.MergeWorkspaceResponse{CommitId: prevCommitId}, nil
 	}
 
-	maxChangeId, err := s.oplocstorebranch.MaxChangeId(userId, in.GetProjectId(), in.GetBranchId())
+	maxChangeId, err := s.oplocstoreworkspace.MaxChangeId(userId, in.GetProjectId(), in.GetWorkspaceId())
 	if err != nil {
 		return nil, err
 	}
@@ -202,13 +202,13 @@ func (s JamHub) MergeBranch(ctx context.Context, in *pb.MergeBranchRequest) (*pb
 
 	makeDiff := func() {
 		for changedPathHash := range pathHashes {
-			sourceReader, err := s.regenBranchFile(userId, in.GetProjectId(), in.GetBranchId(), maxChangeId, changedPathHash)
+			sourceReader, err := s.regenWorkspaceFile(userId, in.GetProjectId(), in.GetWorkspaceId(), maxChangeId, changedPathHash)
 			if err != nil {
 				results <- err
 				return
 			}
 
-			branchOperationLocations, err := s.ReadCommitChunkHashes(ctx, &pb.ReadCommitChunkHashesRequest{
+			workspaceOperationLocations, err := s.ReadCommitChunkHashes(ctx, &pb.ReadCommitChunkHashesRequest{
 				ProjectId: in.GetProjectId(),
 				CommitId:  prevCommitId,
 				PathHash:  []byte(changedPathHash),
@@ -231,7 +231,7 @@ func (s JamHub) MergeBranch(ctx context.Context, in *pb.MergeBranchRequest) (*pb
 			go func() {
 				var blockCt, dataCt, bytes int
 				defer close(opsOut)
-				err := sourceChunker.CreateDelta(branchOperationLocations.GetChunkHashes(), func(op *pb.Operation) error {
+				err := sourceChunker.CreateDelta(workspaceOperationLocations.GetChunkHashes(), func(op *pb.Operation) error {
 					switch op.Type {
 					case pb.Operation_OpBlock:
 						blockCt++
@@ -363,11 +363,11 @@ func (s JamHub) MergeBranch(ctx context.Context, in *pb.MergeBranchRequest) (*pb
 	}
 
 	if isFirstCommit {
-		return &pb.MergeBranchResponse{
+		return &pb.MergeWorkspaceResponse{
 			CommitId: 0,
 		}, nil
 	} else {
-		return &pb.MergeBranchResponse{
+		return &pb.MergeWorkspaceResponse{
 			CommitId: prevCommitId + 1,
 		}, nil
 	}

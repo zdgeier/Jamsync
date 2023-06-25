@@ -27,34 +27,34 @@ func InitNewProject(apiClient pb.JamHubClient, projectName string) {
 	}
 	fmt.Println("Initializing a project at " + currentPath + ". Uploading files...")
 
-	branchResp, err := apiClient.CreateBranch(context.TODO(), &pb.CreateBranchRequest{ProjectId: resp.ProjectId, BranchName: "init"})
+	workspaceResp, err := apiClient.CreateWorkspace(context.TODO(), &pb.CreateWorkspaceRequest{ProjectId: resp.ProjectId, WorkspaceName: "init"})
 	if err != nil {
 		log.Panic(err)
 	}
 
 	fileMetadata := ReadLocalFileList()
-	fileMetadataDiff, err := diffLocalToRemoteCommit(apiClient, resp.GetProjectId(), branchResp.GetBranchId(), fileMetadata)
+	fileMetadataDiff, err := diffLocalToRemoteCommit(apiClient, resp.GetProjectId(), workspaceResp.GetWorkspaceId(), fileMetadata)
 	if err != nil {
 		panic(err)
 	}
 
-	err = pushFileListDiffBranch(apiClient, resp.ProjectId, branchResp.BranchId, 0, fileMetadata, fileMetadataDiff)
+	err = pushFileListDiffWorkspace(apiClient, resp.ProjectId, workspaceResp.WorkspaceId, 0, fileMetadata, fileMetadataDiff)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Merging...")
-	mergeResp, err := apiClient.MergeBranch(context.Background(), &pb.MergeBranchRequest{
-		ProjectId: resp.ProjectId,
-		BranchId:  branchResp.BranchId,
+	mergeResp, err := apiClient.MergeWorkspace(context.Background(), &pb.MergeWorkspaceRequest{
+		ProjectId:   resp.ProjectId,
+		WorkspaceId: workspaceResp.WorkspaceId,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = apiClient.DeleteBranch(context.Background(), &pb.DeleteBranchRequest{
-		ProjectId: resp.ProjectId,
-		BranchId:  branchResp.BranchId,
+	_, err = apiClient.DeleteWorkspace(context.Background(), &pb.DeleteWorkspaceRequest{
+		ProjectId:   resp.ProjectId,
+		WorkspaceId: workspaceResp.WorkspaceId,
 	})
 	if err != nil {
 		log.Panic(err)
@@ -69,7 +69,7 @@ func InitNewProject(apiClient pb.JamHubClient, projectName string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Done! Run `jam checkout <branch name>` to start making changes.")
+	fmt.Println("Done! Run `jam checkout <workspace name>` to start making changes.")
 }
 
 func InitExistingProject(apiClient pb.JamHubClient, projectName string) {
