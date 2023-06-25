@@ -189,7 +189,7 @@ func auth0ClientID() string {
 
 func auth0Domain() string {
 	if jamenv.Env() == jamenv.Prod {
-		return "jamhub.us.auth0.com"
+		return "jamsync.us.auth0.com"
 	}
 	return os.Getenv("AUTH0_DOMAIN")
 }
