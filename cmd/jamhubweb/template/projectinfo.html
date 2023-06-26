@@ -1,0 +1,44 @@
+{{template "head.html" args
+"title" "Project Info"
+}}
+
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <section class="About">
+            <h1 id="js-projectname"></h1>
+            <p class="About-description">
+                Current Commit: <span id="js-current-commit"></span>
+            </p>
+            <p class="About-description">
+                Workspaces: <span id="js-workspaces"></span>
+            </p>
+        </section>
+        <script>
+            async function update() {
+                let splitPath = window.location.pathname.split("/");
+                let projectUrl =  splitPath.slice(0, 3).join('/');
+                let projectName = splitPath[2];
+
+                document.getElementById("js-projectname").innerHTML = projectName;
+                const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+                const currentCommitId = (await currentCommitResp.json()).commit_id;
+                if (currentCommitId) {
+                    document.getElementById("js-current-commit").innerHTML = currentCommitId;
+                } else {
+                    document.getElementById("js-current-commit").innerHTML = 0;
+                }
+                const workspaces = await (await fetch(`/api/projects/${projectName}/workspaces`)).json();
+                if (workspaces.workspaces != undefined) {
+                    document.getElementById("js-workspaces").innerHTML = JSON.stringify(Object.keys(workspaces.workspaces));
+                } else {
+                    document.getElementById("js-workspaces").innerHTML = "[]";
+                }
+            }
+            update();
+	// router.GET("/api/projects/:projectName/workspaces", api.GetWorkspacesHandler())
+        </script>
+    </main>
+    {{template "footer.html"}}
+</body>
+{{template "foot.html"}}
