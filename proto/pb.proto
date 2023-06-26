@@ -7,6 +7,7 @@ import "google/protobuf/timestamp.proto";
 service JamHub {
     // Project operations
     rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
+    rpc SetProjectPublic(SetProjectPublicRequest) returns (SetProjectPublicResponse);
     rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
     rpc ListUserProjects(ListUserProjectsRequest) returns (ListUserProjectsResponse);
     rpc GetProjectId(GetProjectIdRequest) returns (GetProjectIdResponse);
@@ -41,7 +42,8 @@ service JamHub {
 
 message GetWorkspaceNameRequest {
     uint64 project_id = 1;
-    uint64 workspace_id = 2;
+    string owner_id = 2;
+    uint64 workspace_id = 3;
 }
 
 message GetWorkspaceNameResponse {
@@ -50,7 +52,8 @@ message GetWorkspaceNameResponse {
 
 message GetWorkspaceIdRequest {
     uint64 project_id = 1;
-    string workspace_name = 2;
+    string owner_id = 2;
+    string workspace_name = 3;
 }
 
 message GetWorkspaceIdResponse {
@@ -59,7 +62,8 @@ message GetWorkspaceIdResponse {
 
 message GetWorkspaceCurrentChangeRequest {
     uint64 project_id = 1;
-    uint64 workspace_id = 2;
+    string owner_id = 2;
+    uint64 workspace_id = 3;
 }
 
 message GetWorkspaceCurrentChangeResponse {
@@ -68,6 +72,7 @@ message GetWorkspaceCurrentChangeResponse {
 
 message GetProjectCurrentCommitRequest {
     uint64 project_id = 1;
+    string owner_id = 2;
 }
 
 message GetProjectCurrentCommitResponse {
@@ -77,6 +82,7 @@ message GetProjectCurrentCommitResponse {
 
 message GetProjectNameRequest {
     uint64 project_id = 1;
+    string owner_id = 2;
 }
 
 message GetProjectNameResponse {
@@ -85,19 +91,14 @@ message GetProjectNameResponse {
 
 message GetProjectIdRequest {
     string project_name = 1;
+    string owner_id = 2;
 }
 
 message GetProjectIdResponse {
     uint64 project_id = 1;
 }
 
-message EditorStreamMessage{
-    uint64 project_id = 1;
-    bytes update_data = 3;
-}
-
-message WriteOperationStreamResponse {
-}
+message WriteOperationStreamResponse {}
 
 message FileMetadataDiff {
     enum Type {
@@ -144,7 +145,8 @@ message CommitOperationLocations {
 
 message MergeWorkspaceRequest {
     uint64 project_id = 1;
-    uint64 workspace_id = 2;
+    string owner_id = 2;
+    uint64 workspace_id = 3;
 }
 message MergeWorkspaceResponse {
     uint64 commit_id = 1;
@@ -152,7 +154,8 @@ message MergeWorkspaceResponse {
 
 message CreateWorkspaceRequest {
     uint64 project_id = 1;
-    string workspaceName = 2;
+    string owner_id = 2;
+    string workspaceName = 3;
 }
 message CreateWorkspaceResponse {
     uint64 workspace_id = 1;
@@ -160,7 +163,8 @@ message CreateWorkspaceResponse {
 
 message ListWorkspacesRequest {
     uint64 project_id = 1;
-    string project_name = 2;
+    string owner_id = 2;
+    string project_name = 3;
 }
 message ListWorkspacesResponse {
     map<string, uint64> workspaces = 1;
@@ -168,10 +172,11 @@ message ListWorkspacesResponse {
 
 message WorkspaceFileOperation {
     uint64 project_id = 1;
-    uint64 workspace_id = 2;
-    uint64 change_id = 3;
-    bytes path_hash = 4;
-    Operation op = 5;
+    string owner_id = 2;
+    uint64 workspace_id = 3;
+    uint64 change_id = 4;
+    bytes path_hash = 5;
+    Operation op = 6;
 }
 
 message CommittedFileOperation {
@@ -209,15 +214,23 @@ message AddProjectResponse {
     uint64 project_id = 1;
 }
 
+message SetProjectPublicRequest {
+    uint64 project_id = 1;
+    string owner_id = 2;
+}
+message SetProjectPublicResponse {}
+
 message DeleteWorkspaceRequest {
-    uint64 project_id = 2;
+    uint64 project_id = 1;
+    string owner_id = 2;
     uint64 workspace_id = 3;
 }
 message DeleteWorkspaceResponse {}
 
 message GetWorkspaceRequest {
     uint64 project_id = 1;
-    string workspace_name = 2;
+    string owner_id = 2;
+    string workspace_name = 3;
 }
 message GetWorkspaceResponse {
     uint64 workspace_id = 1;

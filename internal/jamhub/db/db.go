@@ -23,7 +23,7 @@ func New() (jamhubDB JamHubDb) {
 
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS users (username TEXT, user_id TEXT, UNIQUE(username, user_id));
-	CREATE TABLE IF NOT EXISTS projects (name TEXT, owner TEXT, UNIQUE(name, owner));
+	CREATE TABLE IF NOT EXISTS projects (name TEXT, owner TEXT, public INTEGER, UNIQUE(name, owner));
 	`
 	_, err = conn.Exec(sqlStmt)
 	if err != nil {
@@ -91,6 +91,11 @@ func (j JamHubDb) GetProjectOwner(projectId uint64) (string, error) {
 	var owner string
 	err := row.Scan(&owner)
 	return owner, err
+}
+
+func (j JamHubDb) SetProjectPublic(id uint64, owner string) error {
+	_, err := j.db.Exec("UPDATE projects SET public = 1 WHERE rowid = ? AND owner = ?", id, owner)
+	return err
 }
 
 func (j JamHubDb) GetProjectId(projectName string, owner string) (uint64, error) {

@@ -7,13 +7,27 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc/serverauth"
 )
 
+func (s JamHub) SetProjectPublic(ctx context.Context, in *pb.SetProjectPublicRequest) (*pb.SetProjectPublicResponse, error) {
+	id, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.db.SetProjectPublic(in.GetProjectId(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.SetProjectPublicResponse{}, nil
+}
+
 func (s JamHub) GetProjectName(ctx context.Context, in *pb.GetProjectNameRequest) (*pb.GetProjectNameResponse, error) {
 	id, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	projectName, err := s.db.GetProjectName(in.GetProjectId(), id)
+	projectName, err := s.db.GetProjectName(in.GetProjectId(), in.GetOwner())
 	if err != nil {
 		return nil, err
 	}
