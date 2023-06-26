@@ -1,4 +1,4 @@
-package userprojects
+package projectinfo
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ func Handler(ctx *gin.Context) {
 	type templateParams struct {
 		Email interface{}
 	}
-	ctx.HTML(http.StatusOK, "user.html", templateParams{
+	ctx.HTML(http.StatusOK, "projectinfo.html", templateParams{
 		Email: session.Get("email"),
 	})
 }

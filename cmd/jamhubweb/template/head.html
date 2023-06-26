@@ -11,6 +11,16 @@
     <link rel="canonical" href="https://jamhub.dev/{{$.canonical}}" />
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VNBQ7FFJXG">
+    </script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-VNBQ7FFJXG');
+    </script>
 
     <title>{{$.title}}</title>
     <style>
@@ -44,10 +54,6 @@
             -webkit-overflow-scrolling: touch;
             -webkit-text-size-adjust: 100%;
             box-sizing: border-box; 
-
-            @media ($phone) {
-                font-size: 1rem;
-            }
         }
         *,
         *::before,

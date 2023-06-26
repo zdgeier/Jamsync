@@ -24,6 +24,7 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamhubweb/login"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/logout"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/middleware"
+	"github.com/zdgeier/jamhub/internal/jamhubweb/projectinfo"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/userprojects"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/workspacefile"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/workspacefiles"
@@ -136,11 +137,11 @@ func New(auth *authenticator.Authenticator) http.Handler {
 	router.GET("/api/projects/:projectName/workspacefiles/:workspaceId/:changeId/*path", api.ProjectBrowseWorkspaceHandler())
 	router.GET("/api/projects/:projectName/workspacefile/:workspaceId/:changeId/*path", api.GetFileWorkspaceHandler())
 
-	router.POST("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.CreateHandler)
 	router.GET("/:username/projects", middleware.IsAuthenticated, middleware.Reauthenticate, userprojects.Handler)
 	router.GET("/:username/:project/workspacefile/:workspaceName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, workspacefile.Handler)
 	router.GET("/:username/:project/committedfile/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfile.Handler)
 	router.GET("/:username/:project/committedfiles/*path", middleware.IsAuthenticated, middleware.Reauthenticate, committedfiles.Handler)
+	router.GET("/:username/:project/projectinfo", middleware.IsAuthenticated, middleware.Reauthenticate, projectinfo.Handler)
 	router.GET("/:username/:project/workspacefiles/:workspaceName/*path", middleware.IsAuthenticated, middleware.Reauthenticate, workspacefiles.Handler)
 	router.GET("/download", middleware.IsAuthenticated, middleware.Reauthenticate, download.Handler)
 	return MaxAge(handlers.CompressHandler(router))
