@@ -14,9 +14,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func Checkout() {
+func WorkOn() {
 	if len(os.Args) != 3 {
-		fmt.Println("jam checkout <workspace name>")
+		fmt.Println("jam workon <workspace name>")
 		return
 	}
 	authFile, err := authfile.Authorize()
@@ -84,7 +84,7 @@ func Checkout() {
 			}
 			return
 		} else {
-			fmt.Println("Must be on mainline to checkout.")
+			fmt.Println("Must be on mainline to workon.")
 			os.Exit(1)
 		}
 	}

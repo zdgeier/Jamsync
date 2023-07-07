@@ -99,7 +99,7 @@ service definitions and data serialization.
 
 ## Current Status
 
-JamHub is currently in development. You can currently push, pull, checkout
+JamHub is currently in development. You can currently push, pull, workon 
 workspaces, and merge workspaces. Over the next few months we'll be adding features
 to make this usable for regular development. The following features are planned:
 

@@ -5,14 +5,26 @@
     {{template "header.html" args "email" .Email}}
     <main>
         <div class="FilesHeader">
-            <h1 id="projectname"></h1>
-            <span>
-                <select id="workspaces" class="FilesHeader-workspaceSelect is-hidden">
-                </select>
-                <p id="no-workspaces" class="is-hidden">
-                    No workspaces
-                </p>
-            </span>
+            <div class="FilesHeader-top">
+                <h1 id="projectname" class="FilesHeader-projectName"></h1>
+                <div class="FilesHeader-topRight">
+                    <select id="workspaces" class="FilesHeader-workspaceSelect is-hidden">
+                    </select>
+                    <p id="no-workspaces" class="is-hidden">
+                        No workspaces
+                    </p>
+                    <div class="FilesHeader-addCollaboratorWrapper">
+                        <a id="js-project-info" class="FilesHeader-projectInfo is-hidden" href="">Project Info</a>
+                        <button id="js-add-collaborator" class="FilesHeader-addCollaborator">Add Collaborator</button>
+                        <form id="js-add-collaborator-form" class="FilesHeader-addCollaboratorForm is-hidden">
+                            <input class="FilesHeader-addCollaboratorInput" placeholder="Email"></input>
+                            <div>
+                                <button id="js-add-collaborator-submit" class="FilesHeader-addCollaboratorSubmit">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="is-hidden" id="js-no-files">No files here, <a href="/download">download the CLI</a> to get started!</div>
         <section class="Files" id="filescontainer">
@@ -21,6 +33,20 @@
         </section>
     </main>
     {{template "footer.html"}}
+    <script>
+        const loc = window.location.href;
+        if (loc.includes("committedfiles") || loc.includes("committedfile") || loc.includes("workspacefile") || loc.includes("workspacefiles")) {
+            let splitPath = window.location.pathname.split("/");
+            let projectUrl =  splitPath.slice(0, 3).join('/') + "/projectinfo";
+            document.getElementById("js-project-info").setAttribute("href", projectUrl)
+            document.getElementById("js-project-info").classList.remove("is-hidden")
+        }
+    </script>
+    <script type="module">
+        document.getElementById("js-add-collaborator").addEventListener('click', () => {
+            document.getElementById("js-add-collaborator-form").classList.toggle("is-hidden")
+        });
+    </script>
     <script type="module">
 
         let splitPath = window.location.pathname.split("/");

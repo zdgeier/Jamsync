@@ -3,7 +3,7 @@
 
 export function ChangeDirectory(arg1:string):Promise<void>;
 
-export function Checkout(arg1:string):Promise<string>;
+export function WorkOn(arg1:string):Promise<string>;
 
 export function GetInfo():Promise<Array<string>>;
 

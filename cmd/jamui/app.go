@@ -58,7 +58,7 @@ func (a *App) startup(ctx context.Context) {
 // 	return projects
 // }
 
-func (a *App) Checkout(workspaceName string) string {
+func (a *App) WorkOn(workspaceName string) string {
 	state, err := statefile.Find()
 	if err != nil {
 		panic("Could not find a `.jamhub` file. Run `jam init` to initialize the project.")
@@ -102,7 +102,7 @@ func (a *App) Checkout(workspaceName string) string {
 				panic(err)
 			}
 		} else {
-			return "Must be on mainline to checkout."
+			return "Must be on mainline to workon."
 		}
 	}
 

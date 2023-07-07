@@ -1,7 +1,7 @@
 import './style.css';
 
 import logo from './assets/images/favicon.svg';
-import { ChangeDirectory, SelectDirectory, ProjectExists, GetInfo, StateFileExists, InitExistingProject, InitNewProject, Checkout} from '../wailsjs/go/main/App';
+import { ChangeDirectory, SelectDirectory, ProjectExists, GetInfo, StateFileExists, InitExistingProject, InitNewProject, WorkOn} from '../wailsjs/go/main/App';
 
 document.getElementById('logo').src = logo;
 
@@ -57,7 +57,7 @@ document.getElementById("screen-init-new-project-path-dialog").addEventListener(
 
 document.getElementById("screen-project-status-workspace-submit").addEventListener("click", async () => {
     const workspaceName = document.getElementById("screen-project-status-workspace-name").value;
-    const result = await Checkout(workspaceName);
+    const result = await WorkOn(workspaceName);
     document.getElementById("screen-project-status-workspace-info").innerHTML = result;
 });
 

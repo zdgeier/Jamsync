@@ -33,7 +33,7 @@ func Push() {
 	defer closer()
 
 	if stateFile.CommitInfo != nil {
-		fmt.Println("Currently on a commit, checkout a workspace with `jam checkout <workspacename>` to push changes.")
+		fmt.Println("Currently on a commit, workon a workspace with `jam workon <workspacename>` to push changes.")
 		os.Exit(1)
 	}
 

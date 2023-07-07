@@ -205,7 +205,7 @@
         }
 
         .is-hidden {
-            display: none;
+            display: none!important;
         }
 
         code {
@@ -239,19 +239,82 @@
         .Files-wrapper--editing:focus-within {
             border-color: var(--bright-pink);
         }
-        .FilesHeader {
-            font-size: 16px;
+        .FilesHeader-top {
             display: flex;
-            flex-wrap: wrap;
             justify-content: space-between;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .FilesHeader-projectName {
+            white-space: pre-wrap;
+            line-break: anywhere;
+        }
+        .FilesHeader-topRight {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            flex: 1;
+        }
+        .FilesHeader-addCollaboratorWrapper {
+            position: relative;
+            display: flex;
+        }
+        .FilesHeader-projectInfo {
+            background: none;
+            border: none;
+            padding: 0;
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 8px;
+            text-align: right;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        .FilesHeader-addCollaborator {
+            background: none;
+            border: none;
+            padding: 0;
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 8px;
+            text-align: right;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        .FilesHeader-addCollaboratorForm {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 16px;
+            margin-top: 48px;
+            border: 1px solid white;
+            padding: 16px;
+            right: 8px;
+        }
+        .FilesHeader-addCollaboratorInput {
+            background-color: var(--dark-blue);
+            color: white;
+            border: 2px solid var(--bright-pink);
+            padding: 8px;
         }
         .FilesHeader-workspaceSelect {
             padding: 8px;
-            margin: 8px;
             color: var(--secondary);
             border: none;
             background-color: var(--primary);
             align-items: center;
+        }
+        .FilesHeader-addCollaboratorSubmit {
+            border: 2px solid var(--bright-pink);
+            background: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            text-align: right;
+            white-space: nowrap;
         }
         .Projects-top {
             display: flex;

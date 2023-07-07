@@ -69,7 +69,7 @@ func InitNewProject(apiClient pb.JamHubClient, projectName string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Done! Run `jam checkout <workspace name>` to start making changes.")
+	fmt.Println("Done! Run `jam workon <workspace name>` to start making changes.")
 }
 
 func InitExistingProject(apiClient pb.JamHubClient, projectName string) {

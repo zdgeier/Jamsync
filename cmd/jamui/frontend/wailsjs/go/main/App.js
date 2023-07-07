@@ -6,8 +6,8 @@ export function ChangeDirectory(arg1) {
   return window['go']['main']['App']['ChangeDirectory'](arg1);
 }
 
-export function Checkout(arg1) {
-  return window['go']['main']['App']['Checkout'](arg1);
+export function WorkOn(arg1) {
+  return window['go']['main']['App']['WorkOn'](arg1);
 }
 
 export function GetInfo() {

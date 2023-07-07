@@ -18,7 +18,6 @@
             {{if $.email}}
             <a class="Header-bottomLink" href="/download">Download</a>
             {{end}}
-            <a id="js-project-info" class="Header-bottomLink is-hidden" href="">Project Info</a>
         </div>
         {{if $.email}}
         <div class="Header-bottomRight">
@@ -26,14 +25,5 @@
         </div>
         {{end}}
     </div>
-    <script>
-        const loc = window.location.href;
-        if (loc.includes("committedfiles") || loc.includes("committedfile") || loc.includes("workspacefile") || loc.includes("workspacefiles")) {
-            let splitPath = window.location.pathname.split("/");
-            let projectUrl =  splitPath.slice(0, 3).join('/') + "/projectinfo";
-            document.getElementById("js-project-info").setAttribute("href", projectUrl)
-            document.getElementById("js-project-info").classList.remove("is-hidden")
-        }
-    </script>
 </header>
 {{end}}

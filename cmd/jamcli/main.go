@@ -33,8 +33,8 @@ func main() {
 		jam.Push()
 	case os.Args[1] == "merge":
 		jam.Merge()
-	case os.Args[1] == "checkout":
-		jam.Checkout()
+	case os.Args[1] == "workon":
+		jam.WorkOn()
 	case os.Args[1] == "workspaces":
 		jam.ListWorkspaces()
 	case os.Args[1] == "projects":
