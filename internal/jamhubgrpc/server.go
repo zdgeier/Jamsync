@@ -99,10 +99,10 @@ func Connect(accessToken *oauth2.Token) (client pb.JamHubClient, closer func(), 
 			return conn, err
 		}),
 	}
-	if jamenv.Env() != jamenv.Local {
-		perRPC := oauth.TokenSource{TokenSource: oauth2.StaticTokenSource(accessToken)}
-		opts = append(opts, grpc.WithPerRPCCredentials(perRPC))
-	}
+	// if jamenv.Env() != jamenv.Local {
+	perRPC := oauth.TokenSource{TokenSource: oauth2.StaticTokenSource(accessToken)}
+	opts = append(opts, grpc.WithPerRPCCredentials(perRPC))
+	// }
 	var creds credentials.TransportCredentials
 	if jamenv.Env() == jamenv.Prod {
 		cp := x509.NewCertPool()

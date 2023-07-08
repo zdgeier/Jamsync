@@ -9,6 +9,7 @@ import (
 	"github.com/zdgeier/jamhub/internal/jamenv"
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc"
 	"github.com/zdgeier/jamhub/internal/jamhubweb/authenticator"
+	"golang.org/x/oauth2"
 )
 
 func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
@@ -16,12 +17,18 @@ func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
 		if jamenv.Env() == jamenv.Local {
 			session := sessions.Default(ctx)
 			session.Set("access_token", "localtoken")
-			session.Set("email", "test@jamhub.dev")
+			email := "test@jamhub.dev"
+			emailQuery, _ := ctx.GetQuery("email")
+			if emailQuery != "" {
+				email = emailQuery
+			}
+			session.Set("email", email)
 			if err := session.Save(); err != nil {
 				ctx.String(http.StatusInternalServerError, err.Error())
 				return
 			}
-			tempClient, closer, err := jamhubgrpc.Connect(nil)
+			token := &oauth2.Token{AccessToken: email}
+			tempClient, closer, err := jamhubgrpc.Connect(token)
 			if err != nil {
 				ctx.String(http.StatusInternalServerError, err.Error())
 				return
@@ -29,14 +36,14 @@ func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
 			defer closer()
 
 			_, err = tempClient.CreateUser(ctx, &pb.CreateUserRequest{
-				Username: "test@jamhub.dev",
+				Username: email,
 			})
 			if err != nil {
 				ctx.String(http.StatusInternalServerError, err.Error())
 				return
 			}
 
-			ctx.Redirect(http.StatusTemporaryRedirect, "/test@jamhub.dev/projects")
+			ctx.Redirect(http.StatusTemporaryRedirect, email+"/projects")
 			return
 		}
 

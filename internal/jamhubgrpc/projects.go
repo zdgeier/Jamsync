@@ -2,6 +2,7 @@ package jamhubgrpc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/zdgeier/jamhub/gen/pb"
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc/serverauth"
@@ -37,6 +38,29 @@ func (s JamHub) AddProject(ctx context.Context, in *pb.AddProjectRequest) (*pb.A
 	return &pb.AddProjectResponse{
 		ProjectId: projectId,
 	}, nil
+}
+
+func (s JamHub) AddCollaborator(ctx context.Context, in *pb.AddCollaboratorRequest) (*pb.AddCollaboratorResponse, error) {
+	id, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := s.db.GetProjectOwner(in.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	if id != owner {
+		return nil, errors.New("not the owner of this project")
+	}
+
+	err = s.db.AddCollaborator(in.GetProjectId(), in.GetUsername())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.AddCollaboratorResponse{}, nil
 }
 
 func (s JamHub) ListUserProjects(ctx context.Context, in *pb.ListUserProjectsRequest) (*pb.ListUserProjectsResponse, error) {

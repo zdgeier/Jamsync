@@ -24,6 +24,7 @@ func New() (jamhubDB JamHubDb) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS users (username TEXT, user_id TEXT, UNIQUE(username, user_id));
 	CREATE TABLE IF NOT EXISTS projects (name TEXT, owner TEXT, UNIQUE(name, owner));
+	CREATE TABLE IF NOT EXISTS collaborators (project_id INTEGER, user_id TEXT);
 	`
 	_, err = conn.Exec(sqlStmt)
 	if err != nil {
@@ -61,6 +62,11 @@ func (j JamHubDb) AddProject(projectName string, owner string) (uint64, error) {
 	}
 
 	return uint64(id), nil
+}
+
+func (j JamHubDb) AddCollaborator(projectId uint64, collaboratorUsername string) error {
+	_, err := j.db.Exec("INSERT INTO collaborators(project_id, user_id) VALUES(?, ?)", projectId, collaboratorUsername)
+	return err
 }
 
 func (j JamHubDb) DeleteProject(projectName string, owner string) (uint64, error) {

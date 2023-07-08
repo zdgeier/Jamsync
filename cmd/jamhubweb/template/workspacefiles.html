@@ -44,7 +44,10 @@
     </script>
     <script type="module">
         document.getElementById("js-add-collaborator").addEventListener('click', () => {
-            document.getElementById("js-add-collaborator-form").classList.toggle("is-hidden")
+            document.getElementById("js-add-collaborator-form").classList.toggle("is-hidden");
+        });
+        document.getElementById("js-add-collaborator-submit").addEventListener('click', () => {
+            fetch("");
         });
     </script>
     <script type="module">

@@ -8,7 +8,6 @@ import (
 	"github.com/zdgeier/jamhub/gen/pb"
 	"github.com/zdgeier/jamhub/internal/jam/authfile"
 	"github.com/zdgeier/jamhub/internal/jam/statefile"
-	"github.com/zdgeier/jamhub/internal/jamenv"
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc"
 	"golang.org/x/oauth2"
 )
@@ -42,10 +41,11 @@ func Open() {
 
 	url := "https://jamhub.dev/"
 	username := authFile.Username
-	if jamenv.Env() == jamenv.Local {
-		url = "http://localhost:8081/"
-		username = "test@jamhub.dev"
-	}
+	// TODO: Pls fix
+	// if jamenv.Env() == jamenv.Local {
+	// 	url = "http://localhost:8081/"
+	// 	username = jamenv.LocalUser()
+	// }
 
 	err = browser.OpenURL(url + username + "/" + nameResp.ProjectName + "/committedfiles/")
 	if err != nil {

@@ -202,6 +202,12 @@ message FileMetadata {
     map<string, File> files = 1;
 }
 
+message AddCollaboratorRequest {
+    uint64 project_id = 1;
+    string username = 2;
+}
+message AddCollaboratorResponse {}
+
 message AddProjectRequest {
     string project_name = 1;
 }
