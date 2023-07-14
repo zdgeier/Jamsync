@@ -12,6 +12,8 @@ service JamHub {
     rpc GetProjectId(GetProjectIdRequest) returns (GetProjectIdResponse);
     rpc GetProjectCurrentCommit(GetProjectCurrentCommitRequest) returns (GetProjectCurrentCommitResponse);
     rpc GetProjectName(GetProjectNameRequest) returns (GetProjectNameResponse);
+    rpc AddCollaborator(AddCollaboratorRequest) returns (AddCollaboratorResponse);
+    rpc GetCollaborators(GetCollaboratorsRequest) returns (GetCollaboratorsResponse);
     // rpc GetProjectConfig(GetProjectConfigRequest) returns (ProjectConfig);
 
     // Change operations
@@ -200,6 +202,13 @@ message File {
 
 message FileMetadata {
     map<string, File> files = 1;
+}
+
+message GetCollaboratorsRequest {
+    uint64 project_id = 1;
+}
+message GetCollaboratorsResponse {
+    repeated string usernames = 1;
 }
 
 message AddCollaboratorRequest {

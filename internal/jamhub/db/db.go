@@ -24,7 +24,7 @@ func New() (jamhubDB JamHubDb) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS users (username TEXT, user_id TEXT, UNIQUE(username, user_id));
 	CREATE TABLE IF NOT EXISTS projects (name TEXT, owner TEXT, UNIQUE(name, owner));
-	CREATE TABLE IF NOT EXISTS collaborators (project_id INTEGER, user_id TEXT);
+	CREATE TABLE IF NOT EXISTS collaborators (project_id INTEGER, user_id TEXT, UNIQUE(project_id, user_id));
 	`
 	_, err = conn.Exec(sqlStmt)
 	if err != nil {
@@ -67,6 +67,26 @@ func (j JamHubDb) AddProject(projectName string, owner string) (uint64, error) {
 func (j JamHubDb) AddCollaborator(projectId uint64, collaboratorUsername string) error {
 	_, err := j.db.Exec("INSERT INTO collaborators(project_id, user_id) VALUES(?, ?)", projectId, collaboratorUsername)
 	return err
+}
+
+func (j JamHubDb) ListCollaborators(projectId uint64) ([]string, error) {
+	rows, err := j.db.Query("SELECT username FROM users AS u INNER JOIN collaborators AS c ON u.user_id = c.user_id WHERE c.project_id = ?", projectId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	fmt.Println("asfjkl")
+
+	data := make([]string, 0)
+	for rows.Next() {
+		var u string
+		err = rows.Scan(&u)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, u)
+	}
+	return data, err
 }
 
 func (j JamHubDb) DeleteProject(projectName string, owner string) (uint64, error) {

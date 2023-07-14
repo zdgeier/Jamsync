@@ -17,7 +17,7 @@
                         <a id="js-project-info" class="FilesHeader-projectInfo is-hidden" href="">Project Info</a>
                         <button id="js-add-collaborator" class="FilesHeader-addCollaborator">Add Collaborator</button>
                         <form id="js-add-collaborator-form" class="FilesHeader-addCollaboratorForm is-hidden">
-                            <input class="FilesHeader-addCollaboratorInput" placeholder="Email"></input>
+                            <input class="FilesHeader-addCollaboratorInput" placeholder="Email" id="js-add-collaborator-email"></input>
                             <div>
                                 <button id="js-add-collaborator-submit" class="FilesHeader-addCollaboratorSubmit">Send</button>
                             </div>
@@ -46,9 +46,16 @@
         document.getElementById("js-add-collaborator").addEventListener('click', () => {
             document.getElementById("js-add-collaborator-form").classList.toggle("is-hidden");
         });
-        document.getElementById("js-add-collaborator-submit").addEventListener('click', () => {
-            fetch("");
+        document.getElementById("js-add-collaborator-submit").addEventListener('click', async () => {
+            let splitPath = window.location.pathname.split("/");
+            let projectUrl =  splitPath.slice(0, 5).join('/');
+            let projectName = splitPath[2];
+            const response = await fetch(`/api/projects/${projectName}/collaborators?username=` + document.getElementById("js-add-collaborator-email").value, {
+                method: 'PUT',
+            });
+            document.getElementById("js-add-collaborator-form").classList.add("is-hidden");
         });
+        
     </script>
     <script type="module">
         let splitPath = window.location.pathname.split("/");

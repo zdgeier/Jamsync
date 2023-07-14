@@ -22,8 +22,8 @@ var redirectUrl = "http://localhost:8082/callback"
 
 func AuthorizeUser() (string, error) {
 	if jamenv.Env() == jamenv.Local {
-		viper.Set("AccessToken", "local")
-		return "local authentication token", nil
+		viper.Set("AccessToken", jamenv.User())
+		return jamenv.User(), nil
 	}
 	var authenticationCode string
 

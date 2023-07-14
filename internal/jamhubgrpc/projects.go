@@ -40,6 +40,31 @@ func (s JamHub) AddProject(ctx context.Context, in *pb.AddProjectRequest) (*pb.A
 	}, nil
 }
 
+func (s JamHub) GetCollaborators(ctx context.Context, in *pb.GetCollaboratorsRequest) (*pb.GetCollaboratorsResponse, error) {
+	id, err := serverauth.ParseIdFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := s.db.GetProjectOwner(in.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	if id != owner {
+		return nil, errors.New("not the owner of this project")
+	}
+
+	usernames, err := s.db.ListCollaborators(in.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetCollaboratorsResponse{
+		Usernames: usernames,
+	}, nil
+}
+
 func (s JamHub) AddCollaborator(ctx context.Context, in *pb.AddCollaboratorRequest) (*pb.AddCollaboratorResponse, error) {
 	id, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {

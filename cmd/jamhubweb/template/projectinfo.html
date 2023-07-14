@@ -13,6 +13,9 @@
             <p class="About-description">
                 Workspaces: <span id="js-workspaces"></span>
             </p>
+            <p class="About-description">
+                Collaborators: <span id="js-collaborators"></span>
+            </p>
         </section>
         <script>
             async function update() {
@@ -33,6 +36,13 @@
                     document.getElementById("js-workspaces").innerHTML = JSON.stringify(Object.keys(workspaces.workspaces));
                 } else {
                     document.getElementById("js-workspaces").innerHTML = "[]";
+                }
+
+                const collaborators = await (await fetch(`/api/projects/${projectName}/collaborators`)).json();
+                if (collaborators.collaborators != undefined) {
+                    document.getElementById("js-collaborators").innerHTML = JSON.stringify(Object.keys(collaborators.collaborators));
+                } else {
+                    document.getElementById("js-collaborators").innerHTML = "[]";
                 }
             }
             update();

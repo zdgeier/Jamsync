@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -323,5 +324,67 @@ func GetWorkspacesHandler() gin.HandlerFunc {
 		}
 
 		ctx.JSON(200, resp)
+	}
+}
+
+func GetCollaboratorsHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+
+		config, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		resp, err := tempClient.GetCollaborators(ctx, &pb.GetCollaboratorsRequest{
+			ProjectId: config.ProjectId,
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		ctx.JSON(200, resp) // Return correct response
+	}
+}
+
+func AddCollaboratorHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accessToken := sessions.Default(ctx).Get("access_token").(string)
+		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer closer()
+
+		config, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
+			ProjectName: ctx.Param("projectName"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		fmt.Println("username", ctx.Query("username"), ctx.Request.URL)
+
+		resp, err := tempClient.AddCollaborator(ctx, &pb.AddCollaboratorRequest{
+			ProjectId: config.ProjectId,
+			Username:  ctx.Query("username"),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		ctx.JSON(200, resp) // Return correct response
 	}
 }

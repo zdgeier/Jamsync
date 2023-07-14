@@ -16,12 +16,12 @@ func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if jamenv.Env() == jamenv.Local {
 			session := sessions.Default(ctx)
-			session.Set("access_token", "localtoken")
 			email := "test@jamhub.dev"
 			emailQuery, _ := ctx.GetQuery("email")
 			if emailQuery != "" {
 				email = emailQuery
 			}
+			session.Set("access_token", email)
 			session.Set("email", email)
 			if err := session.Save(); err != nil {
 				ctx.String(http.StatusInternalServerError, err.Error())

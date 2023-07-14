@@ -130,6 +130,8 @@ func New(auth *authenticator.Authenticator) http.Handler {
 
 	router.GET("/api/userprojects", api.UserProjectsHandler())
 	router.GET("/api/projects/:projectName", api.GetProjectCurrentCommitHandler())
+	router.GET("/api/projects/:projectName/collaborators", api.GetCollaboratorsHandler())
+	router.PUT("/api/projects/:projectName/collaborators", api.AddCollaboratorHandler())
 	router.GET("/api/projects/:projectName/workspaces", api.GetWorkspacesHandler())
 	router.GET("/api/projects/:projectName/workspaces/:workspaceName", api.GetWorkspaceInfoHandler())
 	router.GET("/api/projects/:projectName/committedfiles/:commitId/*path", api.ProjectBrowseCommitHandler())
