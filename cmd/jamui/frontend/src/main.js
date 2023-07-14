@@ -20,7 +20,7 @@ document.getElementById("screen-init-new-project-submit").addEventListener('clic
         return
     }
     if (await StateFileExists(path)) {
-        document.getElementById("screen-init-new-project-status").innerHTML = ".jamhub file already exists in directory."
+        document.getElementById("screen-init-new-project-status").innerHTML = ".jam file already exists in directory."
         return
     }
     
@@ -71,7 +71,7 @@ document.getElementById("screen-open-directory-openExistingProject").addEventLis
     await ChangeDirectory(path)
 
     if (!(await StateFileExists(path))) {
-        document.getElementById("screen-open-directory-status").innerHTML = ".jamhub file not found at selected path. Use \"Initialize Project\" to initialize the directory.";
+        document.getElementById("screen-open-directory-status").innerHTML = ".jam file not found at selected path. Use \"Initialize Project\" to initialize the directory.";
         return
     }
 

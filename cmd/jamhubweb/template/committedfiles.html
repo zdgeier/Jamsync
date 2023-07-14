@@ -49,9 +49,10 @@
         document.getElementById("js-add-collaborator-submit").addEventListener('click', async (e) => {
             e.preventDefault();
             let splitPath = window.location.pathname.split("/");
-            let projectUrl =  splitPath.slice(0, 5).join('/');
-            let projectName = splitPath[2];
-            const response = await fetch(`/api/projects/${projectName}/collaborators?username=` + document.getElementById("js-add-collaborator-email").value, {
+            let projectUrl =  splitPath.slice(0, 6).join('/');
+            let owner = splitPath[2];
+            let projectName = splitPath[3];
+            const response = await fetch(`/api/collaborators/${owner}/${projectName}?username=` + document.getElementById("js-add-collaborator-email").value, {
                 method: 'PUT',
             });
             document.getElementById("js-add-collaborator-form").classList.add("is-hidden");
@@ -69,14 +70,15 @@
             const selectEl = document.getElementById("workspaces");
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
+            let owner = splitPath[1];
             let projectName = splitPath[2];
 
-            const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+            const currentCommitResp = await fetch(`/api/commits/${owner}/${projectName}`);
             const currentCommitJson = await currentCommitResp.json();
             const currentCommitId = currentCommitJson.commit_id ?? 0;
             const currentPath = splitPath.slice(4).join('/');
 
-            const filesResp = await fetch(`/api/projects/${projectName}/committedfiles/${currentCommitId}/${currentPath}`);
+            const filesResp = await fetch(`/api/committedfiles/${owner}/${projectName}/${currentCommitId}?path=${currentPath}`);
             const filesJson = await filesResp.json();
 
             let allFilesTempEl = document.createElement("ol");
@@ -132,8 +134,9 @@
         async function workspaces() {
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 3).join('/');
+            let owner = splitPath[1];
             let projectName = splitPath[2];
-            let workspacesResp = await fetch(`/api/projects/${projectName}/workspaces`);
+            let workspacesResp = await fetch(`/api/workspaces/${owner}/${projectName}`);
             let workspacesJson = await workspacesResp.json();
 
             let selectEl = document.getElementById("workspaces");

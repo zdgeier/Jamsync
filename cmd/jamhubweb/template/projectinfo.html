@@ -24,29 +24,28 @@
                 let projectName = splitPath[2];
 
                 document.getElementById("js-projectname").innerHTML = projectName;
-                const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+                const currentCommitResp = await fetch(`/api/projects/${owner}/${projectName}`);
                 const currentCommitId = (await currentCommitResp.json()).commit_id;
                 if (currentCommitId) {
                     document.getElementById("js-current-commit").innerHTML = currentCommitId;
                 } else {
                     document.getElementById("js-current-commit").innerHTML = 0;
                 }
-                const workspaces = await (await fetch(`/api/projects/${projectName}/workspaces`)).json();
+                const workspaces = await (await fetch(`/api/projects/${owner}/${projectName}/workspaces`)).json();
                 if (workspaces.workspaces != undefined) {
                     document.getElementById("js-workspaces").innerHTML = JSON.stringify(Object.keys(workspaces.workspaces));
                 } else {
                     document.getElementById("js-workspaces").innerHTML = "[]";
                 }
 
-                const collaborators = await (await fetch(`/api/projects/${projectName}/collaborators`)).json();
-                if (collaborators.collaborators != undefined) {
-                    document.getElementById("js-collaborators").innerHTML = JSON.stringify(Object.keys(collaborators.collaborators));
+                const collaborators = await (await fetch(`/api/projects/${owner}/${projectName}/collaborators`)).json();
+                if (collaborators.usernames != undefined) {
+                    document.getElementById("js-collaborators").innerHTML = JSON.stringify(collaborators.usernames);
                 } else {
                     document.getElementById("js-collaborators").innerHTML = "[]";
                 }
             }
             update();
-	// router.GET("/api/projects/:projectName/workspaces", api.GetWorkspacesHandler())
         </script>
     </main>
     {{template "footer.html"}}

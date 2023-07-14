@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -24,7 +25,7 @@ func New() (jamhubDB JamHubDb) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS users (username TEXT, user_id TEXT, UNIQUE(username, user_id));
 	CREATE TABLE IF NOT EXISTS projects (name TEXT, owner TEXT, UNIQUE(name, owner));
-	CREATE TABLE IF NOT EXISTS collaborators (project_id INTEGER, user_id TEXT, UNIQUE(project_id, user_id));
+	CREATE TABLE IF NOT EXISTS collaborators (project_id INTEGER, username TEXT, UNIQUE(project_id, username));
 	`
 	_, err = conn.Exec(sqlStmt)
 	if err != nil {
@@ -64,18 +65,17 @@ func (j JamHubDb) AddProject(projectName string, owner string) (uint64, error) {
 	return uint64(id), nil
 }
 
-func (j JamHubDb) AddCollaborator(projectId uint64, collaboratorUsername string) error {
-	_, err := j.db.Exec("INSERT INTO collaborators(project_id, user_id) VALUES(?, ?)", projectId, collaboratorUsername)
+func (j JamHubDb) AddCollaborator(projectId uint64, collabUsername string) error {
+	_, err := j.db.Exec("INSERT OR IGNORE INTO collaborators(project_id, username) VALUES(?, ?)", projectId, collabUsername)
 	return err
 }
 
 func (j JamHubDb) ListCollaborators(projectId uint64) ([]string, error) {
-	rows, err := j.db.Query("SELECT username FROM users AS u INNER JOIN collaborators AS c ON u.user_id = c.user_id WHERE c.project_id = ?", projectId)
+	rows, err := j.db.Query("SELECT username FROM collaborators WHERE project_id = ?", projectId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	fmt.Println("asfjkl")
 
 	data := make([]string, 0)
 	for rows.Next() {
@@ -87,6 +87,20 @@ func (j JamHubDb) ListCollaborators(projectId uint64) ([]string, error) {
 		data = append(data, u)
 	}
 	return data, err
+}
+
+func (j JamHubDb) HasCollaborator(projectId uint64, collaborator string) bool {
+	var username string
+	err := j.db.QueryRow(`SELECT username FROM collaborators WHERE project_id = 1 AND username = ?;`, projectId, collaborator).Scan(&username)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.Print(err)
+		}
+
+		return false
+	}
+
+	return true
 }
 
 func (j JamHubDb) DeleteProject(projectName string, owner string) (uint64, error) {
@@ -141,8 +155,27 @@ func (j JamHubDb) GetProjectName(id uint64, owner string) (string, error) {
 	return name, err
 }
 
-func (j JamHubDb) ListUserProjects(owner string) ([]Project, error) {
+func (j JamHubDb) ListProjectsOwned(owner string) ([]Project, error) {
 	rows, err := j.db.Query("SELECT rowid, name FROM projects WHERE owner = ?", owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	data := make([]Project, 0)
+	for rows.Next() {
+		u := Project{}
+		err = rows.Scan(&u.Id, &u.Name)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, u)
+	}
+	return data, err
+}
+
+func (j JamHubDb) ListProjectsAsCollaborator(username string) ([]Project, error) {
+	rows, err := j.db.Query("SELECT p.rowid, p.name from projects AS p INNER JOIN collaborators AS c WHERE p.rowid = c.project_id AND c.username = ?", username)
 	if err != nil {
 		return nil, err
 	}
@@ -174,4 +207,15 @@ func (j JamHubDb) Username(userId string) (string, error) {
 	var username string
 	err := row.Scan(&username)
 	return username, err
+}
+
+func (j JamHubDb) UserId(username string) (string, error) {
+	row := j.db.QueryRow("SELECT user_id FROM users WHERE username = ?", username)
+	if row.Err() != nil {
+		return "", row.Err()
+	}
+
+	var userId string
+	err := row.Scan(&username)
+	return userId, err
 }

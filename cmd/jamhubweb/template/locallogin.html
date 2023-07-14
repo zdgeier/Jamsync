@@ -1,0 +1,18 @@
+{{template "head.html" args 
+    "title" "Download" 
+    "canonical" "download" 
+    "description" "You can try a preview version JamHub out for yourself using the client binaries on this page."
+}}
+<body>
+    {{template "header.html" args "email" .Email}}
+    <main>
+        <section class="Download">
+            <h1>Local Login</h1>
+            <form action="/callback" method="get">
+                <input type="text" name="email" id="email" placeholder="Email"></input>
+            </form>
+        </section>
+    </main>
+    {{template "footer.html"}}
+</body>
+{{template "foot.html"}}

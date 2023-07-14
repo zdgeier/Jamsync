@@ -14,17 +14,12 @@ import (
 
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"github.com/skratchdot/open-golang/open"
-	"github.com/spf13/viper"
 	"github.com/zdgeier/jamhub/internal/jamenv"
 )
 
 var redirectUrl = "http://localhost:8082/callback"
 
 func AuthorizeUser() (string, error) {
-	if jamenv.Env() == jamenv.Local {
-		viper.Set("AccessToken", jamenv.User())
-		return jamenv.User(), nil
-	}
 	var authenticationCode string
 
 	// initialize the code verifier

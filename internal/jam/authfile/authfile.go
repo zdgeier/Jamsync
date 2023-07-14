@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path"
 
 	"github.com/zdgeier/jamhub/gen/pb"
+	"github.com/zdgeier/jamhub/internal/jamenv"
 	"github.com/zdgeier/jamhub/internal/jamhub/clientauth"
 	"github.com/zdgeier/jamhub/internal/jamhubgrpc"
 	"golang.org/x/oauth2"
@@ -27,9 +29,22 @@ func Authorize() (AuthFile, error) {
 	}
 
 	if errors.Is(err, os.ErrNotExist) {
-		token, err := clientauth.AuthorizeUser()
-		if err != nil {
-			log.Panic(err)
+		token := ""
+		if os.Args[1] == "login" && len(os.Args) > 2 && os.Args[2] != "" && jamenv.Env() == jamenv.Local {
+			token = os.Args[2]
+		} else if jamenv.Env() == jamenv.Local {
+			if len(os.Args) < 3 {
+				fmt.Println("Use `JAM_ENV=local jam login <username>`")
+				os.Exit(1)
+			} else {
+				fmt.Println("No ~/.jamhubauth file. Login with `JAM_ENV=local jam login <username>` first")
+				os.Exit(1)
+			}
+		} else {
+			token, err = clientauth.AuthorizeUser()
+			if err != nil {
+				log.Panic(err)
+			}
 		}
 
 		apiClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{

@@ -94,7 +94,7 @@ func ReadLocalFileList() *pb.FileMetadata {
 	i := 0
 	if err := filepath.WalkDir(".", func(path string, d fs.DirEntry, _ error) error {
 		path = filepath.ToSlash(path)
-		if ignorer.Match(path) || path == "." || strings.HasPrefix(path, ".git/") || strings.HasPrefix(path, ".jamhub") {
+		if ignorer.Match(path) || path == "." || strings.HasPrefix(path, ".git/") || strings.HasPrefix(path, ".jam") {
 			return nil
 		}
 		numEntries += 1
@@ -114,7 +114,7 @@ func ReadLocalFileList() *pb.FileMetadata {
 	go func() {
 		if err := filepath.WalkDir(".", func(path string, d fs.DirEntry, _ error) error {
 			path = filepath.ToSlash(path)
-			if ignorer.Match(path) || path == "." || strings.HasPrefix(path, ".git/") || strings.HasPrefix(path, ".jamhub") {
+			if ignorer.Match(path) || path == "." || strings.HasPrefix(path, ".git/") || strings.HasPrefix(path, ".jam") {
 				return nil
 			}
 			paths <- PathInfo{path, d.IsDir()}

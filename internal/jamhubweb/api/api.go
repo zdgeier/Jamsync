@@ -26,7 +26,9 @@ func UserProjectsHandler() gin.HandlerFunc {
 		}
 		defer closer()
 
-		resp, err := tempClient.ListUserProjects(ctx, &pb.ListUserProjectsRequest{})
+		resp, err := tempClient.ListUserProjects(ctx, &pb.ListUserProjectsRequest{
+			Owner: ctx.Param("username"),
+		})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
@@ -46,6 +48,7 @@ func GetProjectCurrentCommitHandler() gin.HandlerFunc {
 		defer closer()
 		id, err := tempClient.GetProjectId(ctx, &pb.GetProjectIdRequest{
 			ProjectName: ctx.Param("projectName"),
+			OwnerId:     ctx.Param("owner"),
 		})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
@@ -302,6 +305,7 @@ func GetWorkspacesHandler() gin.HandlerFunc {
 		accessToken := sessions.Default(ctx).Get("access_token").(string)
 		tempClient, closer, err := jamhubgrpc.Connect(&oauth2.Token{AccessToken: accessToken})
 		if err != nil {
+			fmt.Println("asjdkl")
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -311,6 +315,7 @@ func GetWorkspacesHandler() gin.HandlerFunc {
 			ProjectName: ctx.Param("projectName"),
 		})
 		if err != nil {
+			fmt.Println("asjdkl2")
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -319,6 +324,7 @@ func GetWorkspacesHandler() gin.HandlerFunc {
 			ProjectId: config.ProjectId,
 		})
 		if err != nil {
+			fmt.Println("asjdkl3")
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}

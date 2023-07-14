@@ -17,6 +17,7 @@ jamhubdata/
 jamhub.db
 jamhub-build*
 .jamhub
+.jam
 jamhub-build.zip
 .vscode
 gen/

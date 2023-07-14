@@ -14,8 +14,15 @@ import (
 
 func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+
 		if jamenv.Env() == jamenv.Local {
-			ctx.Redirect(http.StatusTemporaryRedirect, "/callback")
+			type templateParams struct {
+				Email interface{}
+			}
+			ctx.HTML(http.StatusOK, "locallogin.html", templateParams{
+				Email: session.Get("email"),
+			})
 			return
 		}
 
@@ -25,7 +32,6 @@ func Handler(auth *authenticator.Authenticator) gin.HandlerFunc {
 			return
 		}
 
-		session := sessions.Default(ctx)
 		session.Set("state", state)
 		if err := session.Save(); err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())

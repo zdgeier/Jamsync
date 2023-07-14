@@ -30,7 +30,3 @@ func Env() JamEnv {
 		return Prod
 	}
 }
-
-func User() string {
-	return os.Getenv("JAM_USER")
-}

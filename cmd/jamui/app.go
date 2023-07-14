@@ -45,23 +45,10 @@ func (a *App) startup(ctx context.Context) {
 	a.client = apiClient
 }
 
-// func (a *App) ListProjects() []string {
-// 	resp, err := a.client.ListUserProjects(a.ctx, &pb.ListUserProjectsRequest{})
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-//
-// 	var projects []string
-// 	for _, proj := range resp.GetProjects() {
-// 		projects = append(projects, proj.Name)
-// 	}
-// 	return projects
-// }
-
 func (a *App) WorkOn(workspaceName string) string {
 	state, err := statefile.Find()
 	if err != nil {
-		panic("Could not find a `.jamhub` file. Run `jam init` to initialize the project.")
+		panic("Could not find a `.jam` file. Run `jam init` to initialize the project.")
 	}
 
 	if state.CommitInfo == nil || state.WorkspaceInfo != nil {
@@ -234,7 +221,7 @@ func (a *App) GetInfo() []string {
 
 	state, err := statefile.Find()
 	if err != nil {
-		panic("no .jamhub!")
+		panic("no .jam!")
 	}
 	nameResp, err := a.client.GetProjectName(context.Background(), &pb.GetProjectNameRequest{
 		ProjectId: state.ProjectId,

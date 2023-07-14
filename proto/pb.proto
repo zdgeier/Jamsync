@@ -86,7 +86,8 @@ message GetProjectNameResponse {
 }
 
 message GetProjectIdRequest {
-    string project_name = 1;
+    string owner_id = 1;
+    string project_name = 2;
 }
 
 message GetProjectIdResponse {
@@ -248,7 +249,10 @@ message DeleteProjectResponse {
     uint64 project_id = 2;
 }
 
-message ListUserProjectsRequest {}
+message ListUserProjectsRequest {
+    string owner = 1;
+}
+
 message ListUserProjectsResponse {
     message Project {
         string name = 1;

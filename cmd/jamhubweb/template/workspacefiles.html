@@ -50,7 +50,7 @@
             let splitPath = window.location.pathname.split("/");
             let projectUrl =  splitPath.slice(0, 5).join('/');
             let projectName = splitPath[2];
-            const response = await fetch(`/api/projects/${projectName}/collaborators?username=` + document.getElementById("js-add-collaborator-email").value, {
+            const response = await fetch(`/api/projects/${owner}/${projectName}/collaborators?username=` + document.getElementById("js-add-collaborator-email").value, {
                 method: 'PUT',
             });
             document.getElementById("js-add-collaborator-form").classList.add("is-hidden");
@@ -70,13 +70,13 @@
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
 
-            const workspaceInfoResp = await fetch(`/api/projects/${projectName}/workspaces/${currWorkspaceName}`);
+            const workspaceInfoResp = await fetch(`/api/workspaces/${owner}/${projectName}/${currWorkspaceName}`);
             const workspaceInfoJson = await workspaceInfoResp.json();
             const currentChangeId = workspaceInfoJson.change_id ?? 0;
             const workspaceId = workspaceInfoJson.workspace_id ?? 0;
 
             let filesJson;
-            const filesResp = await fetch(`/api/projects/${projectName}/workspacefiles/${workspaceId}/${currentChangeId}/${currentPath}`);
+            const filesResp = await fetch(`/api/workspacefiles/${owner}/${projectName}/${workspaceId}?changeId=${currentChangeId}&path=${currentPath}`);
             filesJson = await filesResp.json();
 
             let allFilesTempEl = document.createElement("ol");
@@ -134,7 +134,7 @@
             let projectUrl =  splitPath.slice(0, 3).join('/');
             let projectName = splitPath[2];
             let currWorkspaceName = splitPath[4];
-            let workspacesResp = await fetch(`/api/projects/${projectName}/workspaces`);
+            let workspacesResp = await fetch(`/api/projects/${owner}/${projectName}/workspaces`);
             let workspacesJson = await workspacesResp.json();
 
             let selectEl = document.getElementById("workspaces");

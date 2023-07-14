@@ -11,7 +11,7 @@ server:
 # Build ================================
 
 clean:
-	rm -rf jamhub-build && rm -rf .jamhub && rm -rf jamhub-build.zip && rm -rf jamhubdata/
+	rm -rf jamhub-build && rm -rf .jam && rm -rf jamhub-build.zip && rm -rf jamhubdata/
 
 zipself:
 	git archive --format=zip --output jamhub-source.zip HEAD && mkdir -p ./jamhub-build/ && mv jamhub-source.zip ./jamhub-build/

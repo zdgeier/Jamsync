@@ -20,7 +20,7 @@ func Push() {
 
 	stateFile, err := statefile.Find()
 	if err != nil {
-		fmt.Println("Could not find a `.jamhub` file. Run `jam init` to initialize the project.")
+		fmt.Println("Could not find a `.jam` file. Run `jam init` to initialize the project.")
 		os.Exit(1)
 	}
 

@@ -94,23 +94,64 @@ func (s JamHub) ListUserProjects(ctx context.Context, in *pb.ListUserProjectsReq
 		return nil, err
 	}
 
-	projects, err := s.db.ListUserProjects(id)
+	if id != in.GetOwner() {
+		return nil, errors.New("unauthorized: cannot list other user projects for now")
+	}
+
+	projects, err := s.db.ListProjectsOwned(id)
 	if err != nil {
 		return nil, err
 	}
 
-	projectsPb := make([]*pb.ListUserProjectsResponse_Project, len(projects))
-	for i := range projectsPb {
-		projectsPb[i] = &pb.ListUserProjectsResponse_Project{Name: projects[i].Name, Id: projects[i].Id}
+	collabProjects, err := s.db.ListProjectsAsCollaborator(id)
+	if err != nil {
+		return nil, err
+	}
+
+	projectsPb := make([]*pb.ListUserProjectsResponse_Project, 0, len(projects)+len(collabProjects))
+	for _, p := range projects {
+		projectsPb = append(projectsPb, &pb.ListUserProjectsResponse_Project{Name: p.Name, Id: p.Id})
+	}
+	for _, p := range collabProjects {
+		projectsPb = append(projectsPb, &pb.ListUserProjectsResponse_Project{Name: p.Name, Id: p.Id})
 	}
 
 	return &pb.ListUserProjectsResponse{Projects: projectsPb}, nil
+}
+
+func (s JamHub) ProjectAccessible(owner string, projectName string, currentUsername string) (bool, error) {
+	projectId, err := s.db.GetProjectId(projectName, owner)
+	if err != nil {
+		return false, err
+	}
+
+	projectOwner, err := s.db.GetProjectOwner(projectId)
+	if err != nil {
+		return false, err
+	}
+
+	if owner == projectOwner && owner == currentUsername {
+		return true, nil
+	}
+
+	if s.db.HasCollaborator(projectId, currentUsername) {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (s JamHub) GetProjectId(ctx context.Context, in *pb.GetProjectIdRequest) (*pb.GetProjectIdResponse, error) {
 	userId, err := serverauth.ParseIdFromCtx(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	canAccess, err := s.ProjectAccessible(, in.GetProjectName(), userId)
+	if err != nil {
+		return nil, err
+	} else if !canAccess {
+		return nil, errors.New("cannot access project")
 	}
 
 	projectId, err := s.db.GetProjectId(in.GetProjectName(), userId)

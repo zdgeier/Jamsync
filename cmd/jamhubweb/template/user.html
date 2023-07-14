@@ -17,9 +17,10 @@
     <script>
         let splitPath = window.location.pathname.split("/");
         let projectUrl =  splitPath.slice(0, 2).join('/');
+        let user = projectUrl[1];
 
         async function populateProjectListEl() {
-            let projectsResp = await fetch("/api/userprojects");
+            let projectsResp = await fetch("/api/user/" + user);
             let projectsJson = await projectsResp.json();
 
             if (Object.keys(projectsJson).length === 0) {

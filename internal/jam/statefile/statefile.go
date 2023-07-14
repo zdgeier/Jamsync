@@ -24,7 +24,7 @@ type StateFile struct {
 }
 
 func (s StateFile) Save() error {
-	f, err := os.Create(".jamhub")
+	f, err := os.Create(".jam")
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func Find() (StateFile, error) {
 	if err != nil {
 		panic(err)
 	}
-	filePath, err := filepath.Abs(fmt.Sprintf("%v/%v", currentPath, ".jamhub"))
+	filePath, err := filepath.Abs(fmt.Sprintf("%v/%v", currentPath, ".jam"))
 	if err != nil {
 		panic(err)
 	}

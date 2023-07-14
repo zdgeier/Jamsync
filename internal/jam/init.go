@@ -111,7 +111,7 @@ func InitExistingProject(apiClient pb.JamHubClient, projectName string) {
 func InitConfig() {
 	_, err := statefile.Find()
 	if err == nil {
-		fmt.Println("There's already a project initialized file here. Remove the `.jamhub` file to reinitialize.")
+		fmt.Println("There's already a project initialized file here. Remove the `.jam` file to reinitialize.")
 		os.Exit(1)
 	}
 

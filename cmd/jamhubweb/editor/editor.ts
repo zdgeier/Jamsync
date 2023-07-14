@@ -11,7 +11,8 @@ import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 
 let splitPath = window.location.pathname.split("/");
-let projectName = splitPath[2];
+let owner = splitPath[2];
+let projectName = splitPath[3];
 
 const myHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: "var(--tan)" },
@@ -57,21 +58,21 @@ async function setup() {
   let fileResp;
   if (window.location.pathname.includes("committedfile")) {
     const currentPath = splitPath.slice(4).join("/");
-    const currentCommitResp = await fetch(`/api/projects/${projectName}`);
+    const currentCommitResp = await fetch(`/api/projects/${owner}/${projectName}`);
     const currentCommitJson = await currentCommitResp.json();
     const currentCommitId = currentCommitJson.commit_id ?? 0;
     fileResp = await fetch(
-      `/api/projects/${projectName}/committedfile/${currentCommitId}/${currentPath}`,
+      `/api/committedfile/${owner}/${projectName}/${currentCommitId}?path=${currentPath}`,
     );
   } else {
     const workspaceName = splitPath[4];
-    const workspaceInfoResp = await fetch(`/api/projects/${projectName}/workspaces/${workspaceName}`);
+    const workspaceInfoResp = await fetch(`/api/workspaces/${owner}/${projectName}/${workspaceName}`);
     const workspaceInfoJson = await workspaceInfoResp.json();
     const currentChangeId = workspaceInfoJson.change_id ?? 0;
     const workspaceId = workspaceInfoJson.workspace_id ?? 0;
     const currentPath = splitPath.slice(5).join("/");
     fileResp = await fetch(
-      `/api/projects/${projectName}/workspacefile/${workspaceId}/${currentChangeId}/${currentPath}`,
+      `/api/workspacefile/${owner}/${projectName}/${workspaceId}/${currentChangeId}?path=${currentPath}`,
     );
   }
   const doc = await fileResp.text();
